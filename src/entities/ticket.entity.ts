@@ -35,10 +35,10 @@ export class Ticket {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   resolved_at: Date;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   closed_at: Date;
 
   @Column({ type: 'text', nullable: true })

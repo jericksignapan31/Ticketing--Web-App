@@ -34,8 +34,12 @@ import { RepairLogModule } from './repair-log/repair-log.module';
       },
     ]),
     TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: 'ithelp_desk.db',
+      type: process.env.DB_TYPE as 'postgres',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT || '5432', 10),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE,
       entities: [
         Employee,
         UserAccount,
@@ -46,7 +50,11 @@ import { RepairLogModule } from './repair-log/repair-log.module';
         Ticket,
         RepairLog,
       ],
-      synchronize: true, // Set to false in production
+      synchronize: process.env.DB_SYNCHRONIZE === 'true', // Auto-create tables (only for development)
+      ssl:
+        process.env.NODE_ENV === 'production'
+          ? { rejectUnauthorized: false }
+          : false,
     }),
     AuthModule,
     EmployeeModule,

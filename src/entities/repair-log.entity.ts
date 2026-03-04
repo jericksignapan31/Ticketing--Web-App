@@ -24,7 +24,7 @@ export class RepairLog {
   @Column({ nullable: true })
   repaired_by: string;
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   repair_date: Date;
 
   @Column({ type: 'text' })
