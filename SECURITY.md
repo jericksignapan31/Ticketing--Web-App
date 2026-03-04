@@ -67,6 +67,7 @@ This document outlines the comprehensive security measures implemented in the IT
 
 - **Roles**:
   - `admin` - Full system access, can manage all resources
+  - `supervisor` - Department supervisors, can manage team members and approve requests
   - `it` - IT department staff, can manage tickets and assets
   - `employee` - Regular employees, can create tickets and view own profile
 - **Admin-Only Endpoints**:

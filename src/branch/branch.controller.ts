@@ -40,6 +40,14 @@ export class BranchController {
     return this.branchService.search(query);
   }
 
+  @Get(':id/inventory')
+  @ApiOperation({
+    summary: 'Get branch inventory (all assets in this station)',
+  })
+  getInventory(@Param('id') id: string) {
+    return this.branchService.getInventory(id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a branch by ID' })
   findOne(@Param('id') id: string) {

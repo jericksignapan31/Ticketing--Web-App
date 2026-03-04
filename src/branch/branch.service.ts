@@ -19,14 +19,14 @@ export class BranchService {
 
   async findAll(): Promise<Branch[]> {
     return await this.branchRepository.find({
-      relations: ['employees'],
+      relations: ['employees', 'assets'],
     });
   }
 
   async findOne(branch_id: string): Promise<Branch> {
     const branch = await this.branchRepository.findOne({
       where: { branch_id },
-      relations: ['employees'],
+      relations: ['employees', 'assets'],
     });
 
     if (!branch) {
@@ -57,7 +57,20 @@ export class BranchService {
         { branch_name: Like(`%${query}%`) },
         { location: Like(`%${query}%`) },
       ],
-      relations: ['employees'],
+      relations: ['employees', 'assets'],
     });
+  }
+
+  async getInventory(branch_id: string): Promise<Branch> {
+    const branch = await this.branchRepository.findOne({
+      where: { branch_id },
+      relations: ['assets', 'assets.brand', 'assets.assignedEmployee'],
+    });
+
+    if (!branch) {
+      throw new NotFoundException(`Branch with ID '${branch_id}' not found`);
+    }
+
+    return branch;
   }
 }

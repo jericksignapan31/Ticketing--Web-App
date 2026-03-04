@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Brand } from './brand.entity';
 import { Employee } from './employee.entity';
+import { Branch } from './branch.entity';
 
 @Entity('asset')
 export class Asset {
@@ -20,6 +21,9 @@ export class Asset {
 
   @Column({ nullable: true })
   brand_id: string;
+
+  @Column({ nullable: true })
+  branch_id: string;
 
   @Column()
   category: string;
@@ -54,6 +58,10 @@ export class Asset {
   @ManyToOne(() => Brand)
   @JoinColumn({ name: 'brand_id' })
   brand: Brand;
+
+  @ManyToOne(() => Branch)
+  @JoinColumn({ name: 'branch_id' })
+  branch: Branch;
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'assigned_to' })

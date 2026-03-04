@@ -48,6 +48,12 @@ export class AssetController {
     return this.assetService.findByEmployee(employee_id);
   }
 
+  @Get('branch/:branch_id')
+  @ApiOperation({ summary: 'Get assets by branch/station' })
+  findByBranch(@Param('branch_id') branch_id: string) {
+    return this.assetService.findByBranch(branch_id);
+  }
+
   @Get('status/:status')
   @ApiOperation({ summary: 'Get assets by status' })
   findByStatus(@Param('status') status: string) {

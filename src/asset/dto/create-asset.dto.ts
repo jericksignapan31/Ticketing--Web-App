@@ -20,6 +20,15 @@ export class CreateAssetDto {
   @IsOptional()
   brand_id?: string;
 
+  @ApiProperty({
+    example: 'uuid-of-branch',
+    description: 'Branch/Station ID where the asset is located',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  branch_id?: string;
+
   @ApiProperty({ example: 'Laptop' })
   @IsString()
   @IsNotEmpty()

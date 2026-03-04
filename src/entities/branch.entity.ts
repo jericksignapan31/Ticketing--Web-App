@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Employee } from './employee.entity';
+import { Asset } from './asset.entity';
 
 @Entity('branch')
 export class Branch {
@@ -27,6 +28,9 @@ export class Branch {
 
   @OneToMany(() => Employee, (employee) => employee.branch)
   employees: Employee[];
+
+  @OneToMany(() => Asset, (asset) => asset.branch)
+  assets: Asset[];
 
   @CreateDateColumn()
   created_at: Date;

@@ -34,7 +34,7 @@ export class AssetService {
 
   async findAll(): Promise<Asset[]> {
     return await this.assetRepository.find({
-      relations: ['brand', 'assignedEmployee'],
+      relations: ['brand', 'branch', 'assignedEmployee'],
       order: { created_at: 'DESC' },
     });
   }
@@ -42,7 +42,7 @@ export class AssetService {
   async findOne(asset_id: string): Promise<Asset> {
     const asset = await this.assetRepository.findOne({
       where: { asset_id },
-      relations: ['brand', 'assignedEmployee'],
+      relations: ['brand', 'branch', 'assignedEmployee'],
     });
 
     if (!asset) {
@@ -91,7 +91,15 @@ export class AssetService {
         { model: Like(`%${query}%`) },
         { serial_number: Like(`%${query}%`) },
       ],
-      relations: ['brand', 'assignedEmployee'],
+      relations: ['brand', 'branch', 'assignedEmployee'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findByBranch(branch_id: string): Promise<Asset[]> {
+    return await this.assetRepository.find({
+      where: { branch_id },
+      relations: ['brand', 'branch', 'assignedEmployee'],
       order: { created_at: 'DESC' },
     });
   }
@@ -99,7 +107,7 @@ export class AssetService {
   async findByEmployee(employee_id: string): Promise<Asset[]> {
     return await this.assetRepository.find({
       where: { assigned_to: employee_id },
-      relations: ['brand', 'assignedEmployee'],
+      relations: ['brand', 'branch', 'assignedEmployee'],
       order: { created_at: 'DESC' },
     });
   }
@@ -107,7 +115,7 @@ export class AssetService {
   async findByStatus(status: string): Promise<Asset[]> {
     return await this.assetRepository.find({
       where: { status },
-      relations: ['brand', 'assignedEmployee'],
+      relations: ['brand', 'branch', 'assignedEmployee'],
       order: { created_at: 'DESC' },
     });
   }
