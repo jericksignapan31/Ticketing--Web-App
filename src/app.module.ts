@@ -10,6 +10,7 @@ import { Department } from './entities/department.entity';
 import { Brand } from './entities/brand.entity';
 import { Asset } from './entities/asset.entity';
 import { Ticket } from './entities/ticket.entity';
+import { RepairLog } from './entities/repair-log.entity';
 import { AuthModule } from './auth/auth.module';
 import { EmployeeModule } from './employee/employee.module';
 import { BranchModule } from './branch/branch.module';
@@ -17,6 +18,7 @@ import { DepartmentModule } from './department/department.module';
 import { BrandModule } from './brand/brand.module';
 import { AssetModule } from './asset/asset.module';
 import { TicketModule } from './ticket/ticket.module';
+import { RepairLogModule } from './repair-log/repair-log.module';
 
 @Module({
   imports: [
@@ -34,6 +36,7 @@ import { TicketModule } from './ticket/ticket.module';
         Brand,
         Asset,
         Ticket,
+        RepairLog,
       ],
       synchronize: true, // Set to false in production
     }),
@@ -44,6 +47,7 @@ import { TicketModule } from './ticket/ticket.module';
     BrandModule,
     AssetModule,
     TicketModule,
+    RepairLogModule,
   ],
   controllers: [AppController],
   providers: [AppService],
