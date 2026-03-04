@@ -20,7 +20,7 @@ async function createTestUser() {
         created_at,
         updated_at
       ) VALUES (
-        lower(hex(randomblob(16))),
+        'EMP001',
         'Admin',
         'User',
         'admin@example.com',
@@ -30,21 +30,6 @@ async function createTestUser() {
         datetime('now')
       )
     `);
-
-    // Get the employee_id
-    const employee = await dataSource.query(
-      `SELECT employee_id FROM employee WHERE email = 'admin@example.com'`,
-    );
-
-    if (!employee || employee.length === 0) {
-      console.error('Failed to create employee');
-      return;
-    }
-
-    const employeeId = employee[0].employee_id;
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash('password123', 10);
 
     // Insert test user account
     await dataSource.query(
@@ -58,8 +43,8 @@ async function createTestUser() {
         created_at,
         updated_at
       ) VALUES (
-        lower(hex(randomblob(16))),
-        ?,
+        'USR001',
+        'EMP001',
         'admin',
         ?,
         'active',
@@ -67,10 +52,12 @@ async function createTestUser() {
         datetime('now')
       )
     `,
-      [employeeId, hashedPassword],
+      [await bcrypt.hash('password123', 10)],
     );
 
     console.log('✅ Test user created successfully!');
+    console.log('Employee ID: EMP001');
+    console.log('User ID: USR001');
     console.log('Username: admin');
     console.log('Password: password123');
     console.log('\nYou can now login at: http://localhost:3005/api');
