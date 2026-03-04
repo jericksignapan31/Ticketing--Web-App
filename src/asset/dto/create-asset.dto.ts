@@ -71,4 +71,17 @@ export class CreateAssetDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiProperty({
+    example: {
+      cpu: 'Intel Core i5-1145G7',
+      ram: '16GB DDR4',
+      storage: '512GB SSD',
+      display: '14-inch FHD',
+      os: 'Windows 11 Pro',
+    },
+    required: false,
+  })
+  @IsOptional()
+  specifications?: any;
 }

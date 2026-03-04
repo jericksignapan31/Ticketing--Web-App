@@ -48,6 +48,9 @@ export class Asset {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column({ type: 'simple-json', nullable: true })
+  specifications: any;
+
   @ManyToOne(() => Brand)
   @JoinColumn({ name: 'brand_id' })
   brand: Brand;
