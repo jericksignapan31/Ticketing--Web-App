@@ -9,12 +9,14 @@ import { Branch } from './entities/branch.entity';
 import { Department } from './entities/department.entity';
 import { Brand } from './entities/brand.entity';
 import { Asset } from './entities/asset.entity';
+import { Ticket } from './entities/ticket.entity';
 import { AuthModule } from './auth/auth.module';
 import { EmployeeModule } from './employee/employee.module';
 import { BranchModule } from './branch/branch.module';
 import { DepartmentModule } from './department/department.module';
 import { BrandModule } from './brand/brand.module';
 import { AssetModule } from './asset/asset.module';
+import { TicketModule } from './ticket/ticket.module';
 
 @Module({
   imports: [
@@ -24,7 +26,15 @@ import { AssetModule } from './asset/asset.module';
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: 'ithelp_desk.db',
-      entities: [Employee, UserAccount, Branch, Department, Brand, Asset],
+      entities: [
+        Employee,
+        UserAccount,
+        Branch,
+        Department,
+        Brand,
+        Asset,
+        Ticket,
+      ],
       synchronize: true, // Set to false in production
     }),
     AuthModule,
@@ -33,6 +43,7 @@ import { AssetModule } from './asset/asset.module';
     DepartmentModule,
     BrandModule,
     AssetModule,
+    TicketModule,
   ],
   controllers: [AppController],
   providers: [AppService],
