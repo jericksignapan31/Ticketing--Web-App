@@ -3,10 +3,14 @@ import {
   PrimaryColumn,
   Column,
   OneToOne,
+  ManyToOne,
+  JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserAccount } from './user-account.entity';
+import { Branch } from './branch.entity';
+import { Department } from './department.entity';
 
 @Entity('employee')
 export class Employee {
@@ -39,6 +43,14 @@ export class Employee {
 
   @Column({ default: 'active' })
   employment_status: string;
+
+  @ManyToOne(() => Branch, (branch) => branch.employees)
+  @JoinColumn({ name: 'branch_id' })
+  branch: Branch;
+
+  @ManyToOne(() => Department, (department) => department.employees)
+  @JoinColumn({ name: 'department_id' })
+  department: Department;
 
   @OneToOne(() => UserAccount, (userAccount) => userAccount.employee)
   userAccount: UserAccount;

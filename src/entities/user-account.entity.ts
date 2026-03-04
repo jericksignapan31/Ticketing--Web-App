@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   Column,
   OneToOne,
   JoinColumn,
@@ -11,7 +11,7 @@ import { Employee } from './employee.entity';
 
 @Entity('user_account')
 export class UserAccount {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn('uuid')
   user_id: string;
 
   @Column()
