@@ -7,10 +7,14 @@ import { Employee } from './entities/employee.entity';
 import { UserAccount } from './entities/user-account.entity';
 import { Branch } from './entities/branch.entity';
 import { Department } from './entities/department.entity';
+import { Brand } from './entities/brand.entity';
+import { Asset } from './entities/asset.entity';
 import { AuthModule } from './auth/auth.module';
 import { EmployeeModule } from './employee/employee.module';
 import { BranchModule } from './branch/branch.module';
 import { DepartmentModule } from './department/department.module';
+import { BrandModule } from './brand/brand.module';
+import { AssetModule } from './asset/asset.module';
 
 @Module({
   imports: [
@@ -20,13 +24,15 @@ import { DepartmentModule } from './department/department.module';
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: 'ithelp_desk.db',
-      entities: [Employee, UserAccount, Branch, Department],
+      entities: [Employee, UserAccount, Branch, Department, Brand, Asset],
       synchronize: true, // Set to false in production
     }),
     AuthModule,
     EmployeeModule,
     BranchModule,
     DepartmentModule,
+    BrandModule,
+    AssetModule,
   ],
   controllers: [AppController],
   providers: [AppService],
