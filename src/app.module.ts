@@ -51,10 +51,7 @@ import { RepairLogModule } from './repair-log/repair-log.module';
         RepairLog,
       ],
       synchronize: process.env.DB_SYNCHRONIZE === 'true', // Auto-create tables (only for development)
-      ssl:
-        process.env.NODE_ENV === 'production'
-          ? { rejectUnauthorized: false }
-          : false,
+      ssl: process.env.NODE_ENV === 'production' ? false : undefined,
     }),
     AuthModule,
     EmployeeModule,
