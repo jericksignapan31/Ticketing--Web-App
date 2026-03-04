@@ -12,6 +12,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { PasswordValidator } from '../common/utils/password-validator';
 import { SecurityConfig } from '../common/config/security.config';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
 export class AuthService {
@@ -50,7 +51,7 @@ export class AuthService {
       sub: user.user_id,
       username: user.username,
       employeeId: user.employee_id,
-      role: user.employee?.role || 'user',
+      role: user.employee?.role || UserRole.EMPLOYEE,
     };
 
     return {

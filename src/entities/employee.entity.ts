@@ -11,6 +11,7 @@ import {
 import { UserAccount } from './user-account.entity';
 import { Branch } from './branch.entity';
 import { Department } from './department.entity';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @Entity('employee')
 export class Employee {
@@ -35,8 +36,12 @@ export class Employee {
   @Column({ unique: true })
   email: string;
 
-  @Column()
-  role: string;
+  @Column({
+    type: 'varchar',
+    enum: UserRole,
+    default: UserRole.EMPLOYEE,
+  })
+  role: UserRole;
 
   @Column({ nullable: true })
   position: string;

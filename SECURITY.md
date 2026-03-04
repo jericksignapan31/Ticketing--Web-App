@@ -65,7 +65,10 @@ This document outlines the comprehensive security measures implemented in the IT
 
 #### Role-Based Access Control (RBAC)
 
-- **Roles**: `admin`, `user`
+- **Roles**:
+  - `admin` - Full system access, can manage all resources
+  - `it` - IT department staff, can manage tickets and assets
+  - `employee` - Regular employees, can create tickets and view own profile
 - **Admin-Only Endpoints**:
   - `POST /employees` - Create employee
   - `PATCH /employees/:id` - Update employee
@@ -73,7 +76,7 @@ This document outlines the comprehensive security measures implemented in the IT
 
 #### Decorators
 
-- `@Roles('admin')` - Restrict endpoint to specific roles
+- `@Roles(UserRole.ADMIN)` - Restrict endpoint to specific roles
 - `@CurrentUser()` - Extract current user from JWT token
 - `@UseGuards(JwtAuthGuard)` - Require authentication
 - `@UseGuards(RolesGuard)` - Check user role
@@ -142,13 +145,20 @@ import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { Roles } from './auth/decorators/roles.decorator';
+import { UserRole } from './common/enums/user-role.enum';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
   @Post('sensitive-operation')
-  @Roles('admin') // Only admin can access
+  @Roles(UserRole.ADMIN) // Only admin can access
   sensitiveOperation() {
+    // ...
+  }
+
+  @Post('it-operation')
+  @Roles(UserRole.ADMIN, UserRole.IT) // Admin and IT can access
+  itOperation() {
     // ...
   }
 }

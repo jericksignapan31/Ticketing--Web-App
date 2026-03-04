@@ -25,6 +25,7 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @ApiTags('Employees')
 @Controller('employees')
@@ -35,7 +36,7 @@ export class EmployeeController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a new employee (Admin only)' })
   @ApiResponse({
     status: 201,
@@ -90,7 +91,7 @@ export class EmployeeController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Update an employee (Admin only)' })
   @ApiParam({
     name: 'id',
@@ -113,7 +114,7 @@ export class EmployeeController {
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin')
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete an employee (Admin only)' })
   @ApiParam({

@@ -5,7 +5,9 @@ import {
   IsEmail,
   IsOptional,
   IsBoolean,
+  IsEnum,
 } from 'class-validator';
+import { UserRole } from '../../common/enums/user-role.enum';
 
 export class CreateEmployeeDto {
   @ApiProperty({ example: 'EMP002', description: 'Employee ID' })
@@ -54,10 +56,15 @@ export class CreateEmployeeDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'employee', description: 'Role' })
+  @ApiProperty({
+    example: 'employee',
+    description: 'User role',
+    enum: UserRole,
+    enumName: 'UserRole',
+  })
   @IsNotEmpty()
-  @IsString()
-  role: string;
+  @IsEnum(UserRole, { message: 'Role must be one of: admin, it, employee' })
+  role: UserRole;
 
   @ApiProperty({
     example: 'Software Developer',
