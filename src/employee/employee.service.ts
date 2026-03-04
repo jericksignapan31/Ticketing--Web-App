@@ -72,7 +72,7 @@ export class EmployeeService {
         employee_id: savedEmployee.employee_id,
         username: savedEmployee.employee_id,
         password: hashedPassword,
-        account_status: 'active',
+        account_status: true,
       });
       await manager.save(userAccount);
 

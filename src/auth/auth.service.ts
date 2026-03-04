@@ -28,7 +28,7 @@ export class AuthService {
     }
 
     // Check if account is active
-    if (user.account_status !== 'active') {
+    if (!user.account_status) {
       throw new UnauthorizedException('Account is not active');
     }
 

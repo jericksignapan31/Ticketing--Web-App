@@ -39,10 +39,13 @@ export class Employee {
   role: string;
 
   @Column({ nullable: true })
+  position: string;
+
+  @Column({ nullable: true })
   contact_number: string;
 
-  @Column({ default: 'active' })
-  employment_status: string;
+  @Column({ type: 'boolean', default: true })
+  employment_status: boolean;
 
   @ManyToOne(() => Branch, (branch) => branch.employees)
   @JoinColumn({ name: 'branch_id' })
