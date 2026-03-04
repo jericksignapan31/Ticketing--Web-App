@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { Employee } from './entities/employee.entity';
 import { UserAccount } from './entities/user-account.entity';
 import { AuthModule } from './auth/auth.module';
+import { EmployeeModule } from './employee/employee.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AuthModule } from './auth/auth.module';
       synchronize: true, // Set to false in production
     }),
     AuthModule,
+    EmployeeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
