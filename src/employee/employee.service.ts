@@ -10,6 +10,7 @@ import { Employee } from '../entities/employee.entity';
 import { UserAccount } from '../entities/user-account.entity';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { SecurityConfig } from '../common/config/security.config';
 
 @Injectable()
 export class EmployeeService {
@@ -64,7 +65,7 @@ export class EmployeeService {
       // Hash password (using employee_id as password)
       const hashedPassword = await bcrypt.hash(
         createEmployeeDto.employee_id,
-        10,
+        SecurityConfig.password.saltRounds,
       );
 
       // Create user account with username and password both as employee_id

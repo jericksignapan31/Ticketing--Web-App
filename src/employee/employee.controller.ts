@@ -9,6 +9,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,23 +17,32 @@ import {
   ApiResponse,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @ApiTags('Employees')
 @Controller('employees')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new employee' })
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: 'Create a new employee (Admin only)' })
   @ApiResponse({
     status: 201,
     description: 'Employee created successfully',
   })
   @ApiResponse({ status: 409, description: 'Employee already exists' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   create(@Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeeService.create(createEmployeeDto);
   }
@@ -79,7 +89,9 @@ export class EmployeeController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update an employee' })
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: 'Update an employee (Admin only)' })
   @ApiParam({
     name: 'id',
     description: 'Employee ID',
@@ -91,6 +103,7 @@ export class EmployeeController {
   })
   @ApiResponse({ status: 404, description: 'Employee not found' })
   @ApiResponse({ status: 409, description: 'Email already exists' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   update(
     @Param('id') id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
@@ -99,8 +112,10 @@ export class EmployeeController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete an employee' })
+  @ApiOperation({ summary: 'Delete an employee (Admin only)' })
   @ApiParam({
     name: 'id',
     description: 'Employee ID',
@@ -111,6 +126,7 @@ export class EmployeeController {
     description: 'Employee deleted successfully',
   })
   @ApiResponse({ status: 404, description: 'Employee not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   remove(@Param('id') id: string) {
     return this.employeeService.remove(id);
   }

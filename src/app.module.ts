@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Employee } from './entities/employee.entity';
@@ -25,6 +27,12 @@ import { RepairLogModule } from './repair-log/repair-log.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // Time window in milliseconds (60 seconds)
+        limit: 100, // Max requests per ttl window
+      },
+    ]),
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       database: 'ithelp_desk.db',
@@ -50,6 +58,12 @@ import { RepairLogModule } from './repair-log/repair-log.module';
     RepairLogModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, // Apply rate limiting globally
+    },
+  ],
 })
 export class AppModule {}
