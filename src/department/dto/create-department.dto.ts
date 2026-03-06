@@ -14,9 +14,4 @@ export class CreateDepartmentDto {
   @IsString()
   @IsOptional()
   description?: string;
-
-  @ApiProperty({ example: 'active', default: 'active' })
-  @IsString()
-  @IsOptional()
-  status?: string;
 }

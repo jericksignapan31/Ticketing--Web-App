@@ -19,9 +19,6 @@ export class Department {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ default: 'active' })
-  status: string;
-
   @OneToMany(() => Employee, (employee) => employee.department)
   employees: Employee[];
 
