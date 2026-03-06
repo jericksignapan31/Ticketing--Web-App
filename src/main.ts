@@ -14,7 +14,14 @@ async function bootstrap() {
 
   // Security: CORS - Configure allowed origins
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
+    origin: (origin, callback) => {
+      // Allow requests from localhost (any port) or no origin (like Postman)
+      if (!origin || origin.startsWith('http://localhost:')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: 'Content-Type, Accept, Authorization',

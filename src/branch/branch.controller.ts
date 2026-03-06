@@ -60,6 +60,12 @@ export class BranchController {
     return this.branchService.update(id, updateBranchDto);
   }
 
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update branch status (active/inactive)' })
+  updateStatus(@Param('id') id: string, @Body('status') status: string) {
+    return this.branchService.updateStatus(id, status);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a branch' })
   remove(@Param('id') id: string) {

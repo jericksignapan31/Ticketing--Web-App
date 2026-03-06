@@ -46,6 +46,21 @@ export class BranchService {
     return await this.branchRepository.save(branch);
   }
 
+  async updateStatus(branch_id: string, status: string): Promise<Branch> {
+    const branch = await this.findOne(branch_id);
+
+    // Validate status
+    const validStatuses = ['active', 'inactive'];
+    if (!validStatuses.includes(status)) {
+      throw new NotFoundException(
+        `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
+      );
+    }
+
+    branch.status = status;
+    return await this.branchRepository.save(branch);
+  }
+
   async remove(branch_id: string): Promise<void> {
     const branch = await this.findOne(branch_id);
     await this.branchRepository.remove(branch);
