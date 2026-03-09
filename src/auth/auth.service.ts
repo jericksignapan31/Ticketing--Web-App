@@ -2,14 +2,17 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserAccount } from '../entities/user-account.entity';
+import { Employee } from '../entities/employee.entity';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { SignupDto } from './dto/signup.dto';
 import { PasswordValidator } from '../common/utils/password-validator';
 import { SecurityConfig } from '../common/config/security.config';
 import { UserRole } from '../common/enums/user-role.enum';
@@ -19,7 +22,10 @@ export class AuthService {
   constructor(
     @InjectRepository(UserAccount)
     private userAccountRepository: Repository<UserAccount>,
+    @InjectRepository(Employee)
+    private employeeRepository: Repository<Employee>,
     private jwtService: JwtService,
+    private dataSource: DataSource,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -154,5 +160,88 @@ export class AuthService {
 
   async hashPassword(password: string): Promise<string> {
     return await bcrypt.hash(password, SecurityConfig.password.saltRounds);
+  }
+
+  async signup(signupDto: SignupDto): Promise<{ message: string }> {
+    // Check if employee_id already exists
+    const existingEmployee = await this.employeeRepository.findOne({
+      where: { employee_id: signupDto.employee_id },
+    });
+
+    if (existingEmployee) {
+      throw new ConflictException(
+        `Employee with ID ${signupDto.employee_id} already exists`,
+      );
+    }
+
+    // Check if email already exists
+    const existingEmail = await this.employeeRepository.findOne({
+      where: { email: signupDto.email },
+    });
+
+    if (existingEmail) {
+      throw new ConflictException(
+        `Email ${signupDto.email} is already registered`,
+      );
+    }
+
+    // Check if username already exists
+    const existingUsername = await this.userAccountRepository.findOne({
+      where: { username: signupDto.employee_id },
+    });
+
+    if (existingUsername) {
+      throw new ConflictException(
+        `Username ${signupDto.employee_id} already exists`,
+      );
+    }
+
+    // Validate password strength
+    const validation = PasswordValidator.validate(signupDto.password);
+    if (!validation.valid) {
+      throw new BadRequestException({
+        message: 'Password does not meet security requirements',
+        errors: validation.errors,
+      });
+    }
+
+    // Use transaction to create both employee and user account
+    await this.dataSource.transaction(async (manager) => {
+      // Create employee with employment_status: false (inactive)
+      const employee = manager.create(Employee, {
+        employee_id: signupDto.employee_id,
+        branch_id: signupDto.branch_id,
+        department_id: signupDto.department_id,
+        first_name: signupDto.first_name,
+        last_name: signupDto.last_name,
+        middle_name: signupDto.middle_name,
+        email: signupDto.email,
+        role: signupDto.role || UserRole.EMPLOYEE,
+        position: signupDto.position,
+        contact_number: signupDto.contact_number,
+        employment_status: false, // Inactive until admin verifies
+      });
+      await manager.save(employee);
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(
+        signupDto.password,
+        SecurityConfig.password.saltRounds,
+      );
+
+      // Create user account with account_status: false (inactive)
+      const userAccount = manager.create(UserAccount, {
+        employee_id: signupDto.employee_id,
+        username: signupDto.employee_id,
+        password: hashedPassword,
+        account_status: false, // Inactive until admin verifies
+      });
+      await manager.save(userAccount);
+    });
+
+    return {
+      message:
+        'Registration successful! Your account is pending admin verification.',
+    };
   }
 }

@@ -8,110 +8,97 @@ async function seed() {
   const dataSource = app.get(DataSource);
 
   try {
-    console.log('Starting database seeding...');
+    console.log('Starting database reset and seeding...');
+    console.log('⚠️  WARNING: This will DELETE ALL DATA!\n');
+
+    // Clear all tables in correct order (respecting foreign keys)
+    console.log('Clearing all tables...');
+    await dataSource.query('DELETE FROM "repair_log"');
+    console.log('✓ Cleared repair_log');
+
+    await dataSource.query('DELETE FROM "ticket"');
+    console.log('✓ Cleared ticket');
+
+    await dataSource.query('DELETE FROM "asset"');
+    console.log('✓ Cleared asset');
+
+    await dataSource.query('DELETE FROM "brand"');
+    console.log('✓ Cleared brand');
+
+    await dataSource.query('DELETE FROM "user_account"');
+    console.log('✓ Cleared user_account');
+
+    await dataSource.query('DELETE FROM "employee"');
+    console.log('✓ Cleared employee');
+
+    await dataSource.query('DELETE FROM "department"');
+    console.log('✓ Cleared department');
+
+    await dataSource.query('DELETE FROM "branch"');
+    console.log('✓ Cleared branch');
+
+    console.log('\n✓ All tables cleared successfully!\n');
 
     // 1. Create default branch
     const branchResult = await dataSource.query(`
-      INSERT INTO "branch" (branch_name, location, contact_number)
-      VALUES ('Main Office', 'Head Office', '+63-123-4567')
-      ON CONFLICT DO NOTHING
+      INSERT INTO "branch" (branch_name, location, contact_number, status)
+      VALUES ('Main Office', 'Head Office', '+63-123-4567', 'active')
       RETURNING branch_id
     `);
-    const branchId =
-      branchResult[0]?.branch_id ||
-      (
-        await dataSource.query(`
-      SELECT branch_id FROM "branch" WHERE branch_name = 'Main Office' LIMIT 1
-    `)
-      )[0].branch_id;
-    console.log('✓ Branch created/found:', branchId);
+    const branchId = branchResult[0].branch_id;
+    console.log('✓ Branch created:', branchId);
 
     // 2. Create default department
     const deptResult = await dataSource.query(`
       INSERT INTO "department" (department_name, description)
       VALUES ('IT Department', 'Information Technology')
-      ON CONFLICT DO NOTHING
       RETURNING department_id
     `);
-    const deptId =
-      deptResult[0]?.department_id ||
-      (
-        await dataSource.query(`
-      SELECT department_id FROM "department" WHERE department_name = 'IT Department' LIMIT 1
-    `)
-      )[0].department_id;
-    console.log('✓ Department created/found:', deptId);
+    const deptId = deptResult[0].department_id;
+    console.log('✓ Department created:', deptId);
 
-    // 3. Create admin employee
-    const employeeResult = await dataSource.query(
+    // 3. Create admin employee with employee_id = 'EMP001'
+    await dataSource.query(
       `
       INSERT INTO "employee" (
         employee_id, first_name, last_name, email, contact_number, position, role,
         branch_id, department_id, employment_status
       )
       VALUES (
-        gen_random_uuid(), 'Admin', 'User', 'admin@ithelp.com', '+63-999-999-9999',
+        'EMP001', 'Admin', 'User', 'admin@ithelp.com', '+63-999-999-9999',
         'System Administrator', 'admin', $1, $2, true
       )
-      ON CONFLICT (email) DO NOTHING
-      RETURNING employee_id
     `,
       [branchId, deptId],
     );
-    const employeeId =
-      employeeResult[0]?.employee_id ||
-      (
-        await dataSource.query(`
-      SELECT employee_id FROM "employee" WHERE email = 'admin@ithelp.com' LIMIT 1
-    `)
-      )[0].employee_id;
-    console.log('✓ Employee created/found:', employeeId);
+    console.log('✓ Admin employee created: EMP001');
 
     // 4. Create admin user account with hashed password
     const hashedPassword = await bcrypt.hash('admin123', 10);
 
-    // Check if user already exists
-    const existingUser = await dataSource.query(`
-      SELECT user_id FROM "user_account" WHERE username = 'admin' LIMIT 1
-    `);
-
-    if (existingUser.length === 0) {
-      await dataSource.query(
-        `
-        INSERT INTO "user_account" (employee_id, username, password, account_status)
-        VALUES ($1, 'admin', $2, true)
-      `,
-        [employeeId, hashedPassword],
-      );
-      console.log('✓ Admin user created');
-    } else {
-      console.log('✓ Admin user already exists');
-    }
-
-    // Display created account
-    const adminAccount = await dataSource.query(`
-      SELECT 
-        u.username,
-        e.role,
-        e.first_name,
-        e.last_name,
-        e.email
-      FROM "user_account" u
-      JOIN "employee" e ON u.employee_id = e.employee_id
-      WHERE u.username = 'admin'
-    `);
+    await dataSource.query(
+      `
+      INSERT INTO "user_account" (employee_id, username, password, account_status)
+      VALUES ('EMP001', 'EMP001', $1, true)
+    `,
+      [hashedPassword],
+    );
+    console.log('✓ Admin user account created');
 
     console.log('\n=================================');
     console.log('Default Admin Account Created:');
     console.log('=================================');
-    console.log('Username:', adminAccount[0].username);
+    console.log('Employee ID: EMP001');
+    console.log('Username: EMP001');
     console.log('Password: admin123');
-    console.log('Role:', adminAccount[0].role);
-    console.log('Name:', adminAccount[0].first_name, adminAccount[0].last_name);
-    console.log('Email:', adminAccount[0].email);
+    console.log('Role: admin');
+    console.log('Name: Admin User');
+    console.log('Email: admin@ithelp.com');
+    console.log('Branch: Main Office');
+    console.log('Department: IT Department');
     console.log('=================================\n');
 
-    console.log('✓ Seeding completed successfully!');
+    console.log('✓ Database reset and seeding completed successfully!');
   } catch (error) {
     console.error('✗ Seeding failed:', error);
   } finally {

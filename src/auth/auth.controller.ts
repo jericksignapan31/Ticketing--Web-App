@@ -14,6 +14,7 @@ import {
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { SignupDto } from './dto/signup.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -29,6 +30,24 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('signup')
+  @ApiOperation({ summary: 'Register a new account (Public endpoint)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Registration successful, pending admin verification',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Employee ID or email already exists',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Password does not meet security requirements',
+  })
+  async signup(@Body() signupDto: SignupDto) {
+    return this.authService.signup(signupDto);
   }
 
   @Get('profile')

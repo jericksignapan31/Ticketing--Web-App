@@ -122,6 +122,48 @@ export class EmployeeService {
     return await this.employeeRepository.save(employee);
   }
 
+  async updateEmploymentStatus(
+    employee_id: string,
+    employment_status: boolean,
+  ): Promise<Employee> {
+    const employee = await this.findOne(employee_id);
+
+    // Validate status is a boolean
+    if (typeof employment_status !== 'boolean') {
+      throw new NotFoundException(
+        'Invalid employment_status. Must be true or false',
+      );
+    }
+
+    employee.employment_status = employment_status;
+    return await this.employeeRepository.save(employee);
+  }
+
+  async verifyEmployee(employee_id: string): Promise<{ message: string }> {
+    const employee = await this.findOne(employee_id);
+
+    // Use transaction to update both employee and user account
+    await this.dataSource.transaction(async (manager) => {
+      // Activate employee
+      employee.employment_status = true;
+      await manager.save(employee);
+
+      // Activate user account
+      const userAccount = await manager.findOne(UserAccount, {
+        where: { employee_id },
+      });
+
+      if (userAccount) {
+        userAccount.account_status = true;
+        await manager.save(userAccount);
+      }
+    });
+
+    return {
+      message: `Employee ${employee_id} has been verified and activated successfully`,
+    };
+  }
+
   async remove(employee_id: string): Promise<void> {
     const employee = await this.findOne(employee_id);
     await this.employeeRepository.remove(employee);

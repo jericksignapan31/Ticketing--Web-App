@@ -112,6 +112,50 @@ export class EmployeeController {
     return this.employeeService.update(id, updateEmployeeDto);
   }
 
+  @Patch(':id/status')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update employee employment status (Admin only)' })
+  @ApiParam({
+    name: 'id',
+    description: 'Employee ID',
+    example: 'EMP001',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Employment status updated successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Employee not found' })
+  @ApiResponse({ status: 400, description: 'Invalid status value' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
+  updateEmploymentStatus(
+    @Param('id') id: string,
+    @Body('employment_status') employment_status: boolean,
+  ) {
+    return this.employeeService.updateEmploymentStatus(id, employment_status);
+  }
+
+  @Patch(':id/verify')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Verify and activate employee account (Admin only)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Employee ID',
+    example: 'EMP001',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Employee account verified and activated successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Employee not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
+  verifyEmployee(@Param('id') id: string) {
+    return this.employeeService.verifyEmployee(id);
+  }
+
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
