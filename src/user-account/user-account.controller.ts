@@ -32,6 +32,23 @@ export class UserAccountController {
     return this.userAccountService.findAll();
   }
 
+  @Get('credentials')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary:
+      'Get login credentials list - Username and default password format (Admin only)',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'List of all login credentials showing username and default password format. Actual passwords are never exposed for security.',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
+  getCredentialsList() {
+    return this.userAccountService.getLoginCredentialsList();
+  }
+
   @Get('user/:user_id')
   @ApiOperation({ summary: 'Get user account by user ID' })
   @ApiParam({
