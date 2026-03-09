@@ -162,6 +162,31 @@ export class EmployeeController {
     return this.employeeService.verifyEmployee(id);
   }
 
+  @Patch(':id/reset-password')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Reset employee password to default (Admin only)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Employee ID',
+    example: 'EMP001',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Password reset successfully to default format: {employee_id}@{last_name}',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Employee or user account not found',
+  })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
+  resetPassword(@Param('id') id: string) {
+    return this.employeeService.resetPasswordByAdmin(id);
+  }
+
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)

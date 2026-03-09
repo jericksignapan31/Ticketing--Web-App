@@ -21,6 +21,7 @@ import { BrandModule } from './brand/brand.module';
 import { AssetModule } from './asset/asset.module';
 import { TicketModule } from './ticket/ticket.module';
 import { RepairLogModule } from './repair-log/repair-log.module';
+import { UserAccountModule } from './user-account/user-account.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { RepairLogModule } from './repair-log/repair-log.module';
     AssetModule,
     TicketModule,
     RepairLogModule,
+    UserAccountModule,
   ],
   controllers: [AppController],
   providers: [

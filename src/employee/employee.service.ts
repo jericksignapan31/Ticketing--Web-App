@@ -188,4 +188,40 @@ export class EmployeeService {
       )
       .getMany();
   }
+
+  async resetPasswordByAdmin(
+    employee_id: string,
+  ): Promise<{ message: string; defaultPassword: string }> {
+    // Find employee
+    const employee = await this.findOne(employee_id);
+
+    // Find user account
+    const userAccount = await this.userAccountRepository.findOne({
+      where: { employee_id },
+    });
+
+    if (!userAccount) {
+      throw new NotFoundException(
+        `User account for employee ${employee_id} not found`,
+      );
+    }
+
+    // Generate default password: {employee_id}@{last_name}
+    const defaultPassword = `${employee_id}@${employee.last_name}`;
+
+    // Hash the default password
+    const hashedPassword = await bcrypt.hash(
+      defaultPassword,
+      SecurityConfig.password.saltRounds,
+    );
+
+    // Update user account password
+    userAccount.password = hashedPassword;
+    await this.userAccountRepository.save(userAccount);
+
+    return {
+      message: `Password reset successfully for employee ${employee_id}`,
+      defaultPassword: defaultPassword,
+    };
+  }
 }
