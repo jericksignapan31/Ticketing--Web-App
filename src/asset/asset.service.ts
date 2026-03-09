@@ -2,10 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Asset } from '../entities/asset.entity';
+import { Employee } from '../entities/employee.entity';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 
@@ -14,6 +16,8 @@ export class AssetService {
   constructor(
     @InjectRepository(Asset)
     private assetRepository: Repository<Asset>,
+    @InjectRepository(Employee)
+    private employeeRepository: Repository<Employee>,
   ) {}
 
   async create(createAssetDto: CreateAssetDto): Promise<Asset> {
@@ -26,6 +30,32 @@ export class AssetService {
       throw new ConflictException(
         `Asset with tag '${createAssetDto.asset_tag}' already exists`,
       );
+    }
+
+    // Validate that assigned employee belongs to the same branch
+    if (createAssetDto.assigned_to && createAssetDto.branch_id) {
+      const employee = await this.employeeRepository.findOne({
+        where: { employee_id: createAssetDto.assigned_to },
+      });
+
+      if (!employee) {
+        throw new NotFoundException(
+          `Employee with ID '${createAssetDto.assigned_to}' not found`,
+        );
+      }
+
+      if (employee.branch_id !== createAssetDto.branch_id) {
+        throw new BadRequestException(
+          `Employee '${employee.first_name} ${employee.last_name}' (${employee.employee_id}) does not belong to the selected branch. Employee's branch: ${employee.branch_id}, Asset's branch: ${createAssetDto.branch_id}`,
+        );
+      }
+
+      // Check if employee is active
+      if (!employee.employment_status) {
+        throw new BadRequestException(
+          `Cannot assign asset to inactive employee '${employee.first_name} ${employee.last_name}' (${employee.employee_id})`,
+        );
+      }
     }
 
     const asset = this.assetRepository.create(createAssetDto);
@@ -70,6 +100,35 @@ export class AssetService {
       if (existingAsset) {
         throw new ConflictException(
           `Asset with tag '${updateAssetDto.asset_tag}' already exists`,
+        );
+      }
+    }
+
+    // Validate that assigned employee belongs to the same branch (if both are being updated or set)
+    const finalBranchId = updateAssetDto.branch_id || asset.branch_id;
+    const finalAssignedTo = updateAssetDto.assigned_to || asset.assigned_to;
+
+    if (finalAssignedTo && finalBranchId) {
+      const employee = await this.employeeRepository.findOne({
+        where: { employee_id: finalAssignedTo },
+      });
+
+      if (!employee) {
+        throw new NotFoundException(
+          `Employee with ID '${finalAssignedTo}' not found`,
+        );
+      }
+
+      if (employee.branch_id !== finalBranchId) {
+        throw new BadRequestException(
+          `Employee '${employee.first_name} ${employee.last_name}' (${employee.employee_id}) does not belong to the selected branch. Employee's branch: ${employee.branch_id}, Asset's branch: ${finalBranchId}`,
+        );
+      }
+
+      // Check if employee is active
+      if (!employee.employment_status) {
+        throw new BadRequestException(
+          `Cannot assign asset to inactive employee '${employee.first_name} ${employee.last_name}' (${employee.employee_id})`,
         );
       }
     }

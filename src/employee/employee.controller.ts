@@ -49,19 +49,30 @@ export class EmployeeController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all employees or filter by status' })
+  @ApiOperation({
+    summary: 'Get all employees or filter by status and/or branch',
+  })
   @ApiQuery({
     name: 'status',
     description: 'Filter by status: active, inactive, or pending',
     required: false,
     enum: ['active', 'inactive', 'pending'],
   })
+  @ApiQuery({
+    name: 'branch_id',
+    description: 'Filter by branch ID',
+    required: false,
+    example: 'BR001',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of employees',
   })
-  findAll(@Query('status') status?: 'active' | 'inactive' | 'pending') {
-    return this.employeeService.findAll(status);
+  findAll(
+    @Query('status') status?: 'active' | 'inactive' | 'pending',
+    @Query('branch_id') branch_id?: string,
+  ) {
+    return this.employeeService.findAll(status, branch_id);
   }
 
   @Get('search')
@@ -77,6 +88,21 @@ export class EmployeeController {
   })
   search(@Query('q') searchTerm: string) {
     return this.employeeService.search(searchTerm);
+  }
+
+  @Get('branch/:branch_id')
+  @ApiOperation({ summary: 'Get employees by branch (Active employees only)' })
+  @ApiParam({
+    name: 'branch_id',
+    description: 'Branch ID',
+    example: 'BR001',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of active employees in the specified branch',
+  })
+  findByBranch(@Param('branch_id') branch_id: string) {
+    return this.employeeService.findByBranch(branch_id);
   }
 
   @Get(':id')

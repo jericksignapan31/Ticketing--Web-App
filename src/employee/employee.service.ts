@@ -82,6 +82,7 @@ export class EmployeeService {
 
   async findAll(
     status?: 'active' | 'inactive' | 'pending',
+    branch_id?: string,
   ): Promise<Employee[]> {
     const queryBuilder = this.employeeRepository
       .createQueryBuilder('employee')
@@ -90,21 +91,27 @@ export class EmployeeService {
       .leftJoinAndSelect('employee.department', 'department')
       .orderBy('employee.created_at', 'DESC');
 
+    // Filter by status
     if (status === 'active') {
       // Active: employment_status = true
-      queryBuilder.where('employee.employment_status = :status', {
+      queryBuilder.andWhere('employee.employment_status = :status', {
         status: true,
       });
     } else if (status === 'inactive') {
       // Inactive: employment_status = false (deactivated accounts)
-      queryBuilder.where('employee.employment_status = :empStatus', {
+      queryBuilder.andWhere('employee.employment_status = :empStatus', {
         empStatus: false,
       });
     } else if (status === 'pending') {
       // Pending: employment_status = false (same as inactive, but frontend can differentiate by created date)
-      queryBuilder.where('employee.employment_status = :empStatus', {
+      queryBuilder.andWhere('employee.employment_status = :empStatus', {
         empStatus: false,
       });
+    }
+
+    // Filter by branch
+    if (branch_id) {
+      queryBuilder.andWhere('employee.branch_id = :branch_id', { branch_id });
     }
 
     return await queryBuilder.getMany();
@@ -113,6 +120,7 @@ export class EmployeeService {
   async findOne(employee_id: string): Promise<Employee> {
     const employee = await this.employeeRepository.findOne({
       where: { employee_id },
+      relations: ['branch', 'department', 'userAccount'],
     });
 
     if (!employee) {
@@ -187,6 +195,19 @@ export class EmployeeService {
         { search: `%${searchTerm}%` },
       )
       .getMany();
+  }
+
+  async findByBranch(branch_id: string): Promise<Employee[]> {
+    return await this.employeeRepository.find({
+      where: {
+        branch_id,
+        employment_status: true, // Only active employees
+      },
+      relations: ['branch', 'department'],
+      order: {
+        first_name: 'ASC',
+      },
+    });
   }
 
   async resetPasswordByAdmin(
