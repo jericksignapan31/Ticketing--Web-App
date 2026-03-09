@@ -73,7 +73,6 @@ export class EmployeeService {
         employee_id: savedEmployee.employee_id,
         username: savedEmployee.employee_id,
         password: hashedPassword,
-        account_status: true,
       });
       await manager.save(userAccount);
 
@@ -81,10 +80,34 @@ export class EmployeeService {
     });
   }
 
-  async findAll(): Promise<Employee[]> {
-    return await this.employeeRepository.find({
-      order: { created_at: 'DESC' },
-    });
+  async findAll(
+    status?: 'active' | 'inactive' | 'pending',
+  ): Promise<Employee[]> {
+    const queryBuilder = this.employeeRepository
+      .createQueryBuilder('employee')
+      .leftJoinAndSelect('employee.userAccount', 'userAccount')
+      .leftJoinAndSelect('employee.branch', 'branch')
+      .leftJoinAndSelect('employee.department', 'department')
+      .orderBy('employee.created_at', 'DESC');
+
+    if (status === 'active') {
+      // Active: employment_status = true
+      queryBuilder.where('employee.employment_status = :status', {
+        status: true,
+      });
+    } else if (status === 'inactive') {
+      // Inactive: employment_status = false (deactivated accounts)
+      queryBuilder.where('employee.employment_status = :empStatus', {
+        empStatus: false,
+      });
+    } else if (status === 'pending') {
+      // Pending: employment_status = false (same as inactive, but frontend can differentiate by created date)
+      queryBuilder.where('employee.employment_status = :empStatus', {
+        empStatus: false,
+      });
+    }
+
+    return await queryBuilder.getMany();
   }
 
   async findOne(employee_id: string): Promise<Employee> {
@@ -142,22 +165,9 @@ export class EmployeeService {
   async verifyEmployee(employee_id: string): Promise<{ message: string }> {
     const employee = await this.findOne(employee_id);
 
-    // Use transaction to update both employee and user account
-    await this.dataSource.transaction(async (manager) => {
-      // Activate employee
-      employee.employment_status = true;
-      await manager.save(employee);
-
-      // Activate user account
-      const userAccount = await manager.findOne(UserAccount, {
-        where: { employee_id },
-      });
-
-      if (userAccount) {
-        userAccount.account_status = true;
-        await manager.save(userAccount);
-      }
-    });
+    // Activate employee (this will automatically activate login access)
+    employee.employment_status = true;
+    await this.employeeRepository.save(employee);
 
     return {
       message: `Employee ${employee_id} has been verified and activated successfully`,

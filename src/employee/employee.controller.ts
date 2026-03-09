@@ -49,13 +49,19 @@ export class EmployeeController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all employees' })
+  @ApiOperation({ summary: 'Get all employees or filter by status' })
+  @ApiQuery({
+    name: 'status',
+    description: 'Filter by status: active, inactive, or pending',
+    required: false,
+    enum: ['active', 'inactive', 'pending'],
+  })
   @ApiResponse({
     status: 200,
-    description: 'List of all employees',
+    description: 'List of employees',
   })
-  findAll() {
-    return this.employeeService.findAll();
+  findAll(@Query('status') status?: 'active' | 'inactive' | 'pending') {
+    return this.employeeService.findAll(status);
   }
 
   @Get('search')

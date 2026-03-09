@@ -23,9 +23,6 @@ export class UserAccount {
   @Column()
   password: string;
 
-  @Column({ type: 'boolean', default: true })
-  account_status: boolean;
-
   @OneToOne(() => Employee, (employee) => employee.userAccount)
   @JoinColumn({ name: 'employee_id' })
   employee: Employee;

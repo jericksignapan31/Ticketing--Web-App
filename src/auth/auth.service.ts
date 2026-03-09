@@ -41,8 +41,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check if account is active
-    if (!user.account_status) {
+    // Check if employee account is active
+    if (!user.employee || !user.employee.employment_status) {
       throw new UnauthorizedException('Account is not active');
     }
 
@@ -141,7 +141,6 @@ export class AuthService {
     return {
       user_id: user.user_id,
       username: user.username,
-      account_status: user.account_status,
       employee: {
         employee_id: user.employee.employee_id,
         first_name: user.employee.first_name,
@@ -229,12 +228,11 @@ export class AuthService {
         SecurityConfig.password.saltRounds,
       );
 
-      // Create user account with account_status: false (inactive)
+      // Create user account with account linked to employee status
       const userAccount = manager.create(UserAccount, {
         employee_id: signupDto.employee_id,
         username: signupDto.employee_id,
         password: hashedPassword,
-        account_status: false, // Inactive until admin verifies
       });
       await manager.save(userAccount);
     });

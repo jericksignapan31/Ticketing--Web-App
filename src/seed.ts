@@ -78,8 +78,8 @@ async function seed() {
 
     await dataSource.query(
       `
-      INSERT INTO "user_account" (employee_id, username, password, account_status)
-      VALUES ('EMP001', 'EMP001', $1, true)
+      INSERT INTO "user_account" (employee_id, username, password)
+      VALUES ('EMP001', 'EMP001', $1)
     `,
       [hashedPassword],
     );

@@ -48,7 +48,6 @@ async function syncUserAccounts() {
         employee_id: employee.employee_id,
         username: employee.employee_id,
         password: hashedPassword,
-        account_status: true,
       });
 
       await userAccountRepo.save(userAccount);
