@@ -88,7 +88,10 @@ export class TicketController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERVISOR, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all tickets pending approval' })
-  @ApiResponse({ status: 200, description: 'Returns all tickets pending supervisor approval' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all tickets pending supervisor approval',
+  })
   findPendingApprovals() {
     return this.ticketService.findPendingApprovals();
   }
@@ -98,7 +101,10 @@ export class TicketController {
   @Roles(UserRole.SUPERVISOR, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get tickets by approval status' })
   @ApiParam({ name: 'status', enum: ['pending', 'approved', 'rejected'] })
-  @ApiResponse({ status: 200, description: 'Returns tickets with specified approval status' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns tickets with specified approval status',
+  })
   findByApprovalStatus(@Param('status') status: string) {
     return this.ticketService.findByApprovalStatus(status);
   }
@@ -116,7 +122,11 @@ export class TicketController {
     @CurrentUser() user: any,
     @Body() approveTicketDto: ApproveTicketDto,
   ) {
-    return this.ticketService.approveTicket(id, user.employee_id, approveTicketDto);
+    return this.ticketService.approveTicket(
+      id,
+      user.employee_id,
+      approveTicketDto,
+    );
   }
 
   @Patch(':id/reject')
@@ -132,7 +142,11 @@ export class TicketController {
     @CurrentUser() user: any,
     @Body() rejectTicketDto: RejectTicketDto,
   ) {
-    return this.ticketService.rejectTicket(id, user.employee_id, rejectTicketDto);
+    return this.ticketService.rejectTicket(
+      id,
+      user.employee_id,
+      rejectTicketDto,
+    );
   }
 
   @Get(':id')
