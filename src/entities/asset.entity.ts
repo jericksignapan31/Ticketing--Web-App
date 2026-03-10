@@ -34,20 +34,11 @@ export class Asset {
   @Column({ nullable: true })
   serial_number: string;
 
-  @Column({ type: 'date', nullable: true })
-  purchase_date: Date;
-
-  @Column({ type: 'date', nullable: true })
-  warranty_expiry_date: Date;
-
   @Column({ default: 'available' })
   status: string;
 
   @Column({ nullable: true })
   assigned_to: string;
-
-  @Column({ nullable: true })
-  location: string;
 
   @Column({ type: 'text', nullable: true })
   notes: string;

@@ -1,9 +1,4 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsDateString,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAssetDto {
@@ -44,16 +39,6 @@ export class CreateAssetDto {
   @IsOptional()
   serial_number?: string;
 
-  @ApiProperty({ example: '2024-01-15', required: false })
-  @IsDateString()
-  @IsOptional()
-  purchase_date?: Date;
-
-  @ApiProperty({ example: '2027-01-15', required: false })
-  @IsDateString()
-  @IsOptional()
-  warranty_expiry_date?: Date;
-
   @ApiProperty({
     example: 'available',
     default: 'available',
@@ -67,11 +52,6 @@ export class CreateAssetDto {
   @IsString()
   @IsOptional()
   assigned_to?: string;
-
-  @ApiProperty({ example: 'Main Office - IT Department', required: false })
-  @IsString()
-  @IsOptional()
-  location?: string;
 
   @ApiProperty({
     example: 'Additional notes about the asset',
