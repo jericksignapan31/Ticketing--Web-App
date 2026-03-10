@@ -55,6 +55,18 @@ export class Asset {
   @Column({ type: 'simple-json', nullable: true })
   specifications: any;
 
+  @Column({ length: 45, nullable: true })
+  ip_address: string;
+
+  @Column({ length: 17, nullable: true })
+  mac_address: string;
+
+  @Column({ length: 255, nullable: true })
+  hostname: string;
+
+  @Column({ length: 50, nullable: true })
+  anydesk_id: string;
+
   @ManyToOne(() => Brand)
   @JoinColumn({ name: 'brand_id' })
   brand: Brand;

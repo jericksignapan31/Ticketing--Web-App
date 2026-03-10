@@ -93,4 +93,40 @@ export class CreateAssetDto {
   })
   @IsOptional()
   specifications?: any;
+
+  @ApiProperty({
+    example: '192.168.1.100',
+    description: 'IP address of the device (for computers/laptops)',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  ip_address?: string;
+
+  @ApiProperty({
+    example: '00:1B:44:11:3A:B7',
+    description: 'MAC address of the device',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  mac_address?: string;
+
+  @ApiProperty({
+    example: 'DESKTOP-001',
+    description: 'Computer hostname',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  hostname?: string;
+
+  @ApiProperty({
+    example: '987654321',
+    description: 'AnyDesk remote support ID',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  anydesk_id?: string;
 }
