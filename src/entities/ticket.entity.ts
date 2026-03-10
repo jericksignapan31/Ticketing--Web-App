@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Employee } from './employee.entity';
+import { Asset } from './asset.entity';
 
 @Entity('ticket')
 export class Ticket {
@@ -18,7 +19,13 @@ export class Ticket {
   employee_id: string;
 
   @Column({ nullable: true })
+  asset_id: string;
+
+  @Column({ nullable: true })
   assigned_to: string;
+
+  @Column({ type: 'text', nullable: true })
+  image_url: string;
 
   @Column()
   category: string;
@@ -59,6 +66,10 @@ export class Ticket {
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'employee_id' })
   reporter: Employee;
+
+  @ManyToOne(() => Asset)
+  @JoinColumn({ name: 'asset_id' })
+  asset: Asset;
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'assigned_to' })

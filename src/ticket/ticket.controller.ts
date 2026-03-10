@@ -35,8 +35,12 @@ export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new ticket' })
-  create(@Body() createTicketDto: CreateTicketDto) {
+  @ApiOperation({ summary: 'Create a new repair request ticket' })
+  @ApiResponse({ status: 201, description: 'Ticket created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  create(@Body() createTicketDto: CreateTicketDto, @CurrentUser() user: any) {
+    // Automatically set the reporter as the logged-in user
+    createTicketDto.employee_id = user.employee_id;
     return this.ticketService.create(createTicketDto);
   }
 

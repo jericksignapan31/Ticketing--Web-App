@@ -178,4 +178,30 @@ export class AssetService {
       order: { created_at: 'DESC' },
     });
   }
+
+  async findByUserBranch(employee_id: string): Promise<Asset[]> {
+    // Get the employee's branch
+    const employee = await this.employeeRepository.findOne({
+      where: { employee_id },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(
+        `Employee with ID '${employee_id}' not found`,
+      );
+    }
+
+    if (!employee.branch_id) {
+      throw new BadRequestException(
+        `Employee '${employee.first_name} ${employee.last_name}' is not assigned to any branch`,
+      );
+    }
+
+    // Return assets from the employee's branch
+    return await this.assetRepository.find({
+      where: { branch_id: employee.branch_id },
+      relations: ['brand', 'branch', 'assignedEmployee'],
+      order: { created_at: 'DESC' },
+    });
+  }
 }

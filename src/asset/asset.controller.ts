@@ -9,11 +9,17 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { AssetService } from './asset.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('assets')
 @ApiBearerAuth()
@@ -40,6 +46,22 @@ export class AssetController {
   })
   search(@Query('q') query: string) {
     return this.assetService.search(query);
+  }
+
+  @Get('my-branch')
+  @ApiOperation({
+    summary: 'Get assets from my branch/station (for ticket creation dropdown)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Returns assets from the logged-in user's branch",
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Employee not found or not assigned to any branch',
+  })
+  findMyBranchAssets(@CurrentUser() user: any) {
+    return this.assetService.findByUserBranch(user.employee_id);
   }
 
   @Get('employee/:employee_id')

@@ -25,7 +25,14 @@ export class TicketService {
 
   async findAll(): Promise<Ticket[]> {
     return await this.ticketRepository.find({
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
       order: { created_at: 'DESC' },
     });
   }
@@ -33,7 +40,14 @@ export class TicketService {
   async findOne(ticket_id: string): Promise<Ticket> {
     const ticket = await this.ticketRepository.findOne({
       where: { ticket_id },
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
     });
 
     if (!ticket) {
@@ -65,7 +79,14 @@ export class TicketService {
         { description: Like(`%${query}%`) },
         { category: Like(`%${query}%`) },
       ],
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
       order: { created_at: 'DESC' },
     });
   }
@@ -73,7 +94,14 @@ export class TicketService {
   async findByReporter(employee_id: string): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       where: { employee_id },
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
       order: { created_at: 'DESC' },
     });
   }
@@ -81,7 +109,14 @@ export class TicketService {
   async findByAssignee(employee_id: string): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       where: { assigned_to: employee_id },
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
       order: { created_at: 'DESC' },
     });
   }
@@ -89,7 +124,14 @@ export class TicketService {
   async findByStatus(status: string): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       where: { status },
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
       order: { created_at: 'DESC' },
     });
   }
@@ -97,7 +139,14 @@ export class TicketService {
   async findByPriority(priority: string): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       where: { priority },
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
       order: { created_at: 'DESC' },
     });
   }
@@ -105,7 +154,14 @@ export class TicketService {
   async findByCategory(category: string): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       where: { category },
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
       order: { created_at: 'DESC' },
     });
   }
@@ -166,7 +222,14 @@ export class TicketService {
   async findPendingApprovals(): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       where: { approval_status: 'pending' },
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
       order: { created_at: 'DESC' },
     });
   }
@@ -174,7 +237,14 @@ export class TicketService {
   async findByApprovalStatus(approval_status: string): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       where: { approval_status },
-      relations: ['reporter', 'assignedEmployee', 'approver'],
+      relations: [
+        'reporter',
+        'assignedEmployee',
+        'approver',
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
       order: { created_at: 'DESC' },
     });
   }
