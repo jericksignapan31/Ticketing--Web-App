@@ -27,7 +27,11 @@ export class CreateTicketDto {
   @IsNotEmpty()
   priority: string;
 
-  @ApiProperty({ example: 'open', default: 'open', required: false })
+  @ApiProperty({
+    example: 'pending_approval',
+    default: 'pending_approval',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   status?: string;

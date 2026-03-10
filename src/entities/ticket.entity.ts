@@ -26,8 +26,20 @@ export class Ticket {
   @Column()
   priority: string;
 
-  @Column({ default: 'open' })
+  @Column({ default: 'pending_approval' })
   status: string;
+
+  @Column({ default: 'pending' })
+  approval_status: string;
+
+  @Column({ nullable: true })
+  approved_by: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  approved_at: Date;
+
+  @Column({ type: 'text', nullable: true })
+  rejection_reason: string;
 
   @Column()
   subject: string;
@@ -51,6 +63,10 @@ export class Ticket {
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'assigned_to' })
   assignedEmployee: Employee;
+
+  @ManyToOne(() => Employee)
+  @JoinColumn({ name: 'approved_by' })
+  approver: Employee;
 
   @CreateDateColumn()
   created_at: Date;
