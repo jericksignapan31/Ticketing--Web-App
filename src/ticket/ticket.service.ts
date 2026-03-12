@@ -10,6 +10,8 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { ApproveTicketDto } from './dto/approve-ticket.dto';
 import { RejectTicketDto } from './dto/reject-ticket.dto';
+import { StartWorkDto } from './dto/start-work.dto';
+import { CompleteTicketDto } from './dto/complete-ticket.dto';
 
 @Injectable()
 export class TicketService {
@@ -250,5 +252,76 @@ export class TicketService {
       ],
       order: { created_at: 'DESC' },
     });
+  }
+
+  async startWork(
+    ticket_id: string,
+    it_staff_id: string,
+    startWorkDto: StartWorkDto,
+  ): Promise<Ticket> {
+    const ticket = await this.findOne(ticket_id);
+
+    // Validate ticket is assigned or approved
+    if (ticket.status !== 'assigned' && ticket.status !== 'approved') {
+      throw new BadRequestException(
+        `Cannot start work on ticket with status '${ticket.status}'. Ticket must be assigned or approved.`,
+      );
+    }
+
+    // Validate IT staff is assigned to this ticket
+    if (ticket.assigned_to && ticket.assigned_to !== it_staff_id) {
+      throw new BadRequestException(
+        `You are not assigned to this ticket. Assigned to: ${ticket.assigned_to}`,
+      );
+    }
+
+    // Update status to in_progress
+    ticket.status = 'in_progress';
+    ticket.started_at = new Date();
+
+    if (startWorkDto.notes) {
+      ticket.resolution_notes = startWorkDto.notes;
+    }
+
+    return await this.ticketRepository.save(ticket);
+  }
+
+  async completeTicket(
+    ticket_id: string,
+    it_staff_id: string,
+    completeTicketDto: CompleteTicketDto,
+  ): Promise<Ticket> {
+    const ticket = await this.findOne(ticket_id);
+
+    // Validate ticket is in progress
+    if (ticket.status !== 'in_progress') {
+      throw new BadRequestException(
+        `Cannot complete ticket with status '${ticket.status}'. Ticket must be in progress.`,
+      );
+    }
+
+    // Validate IT staff is assigned to this ticket
+    if (ticket.assigned_to && ticket.assigned_to !== it_staff_id) {
+      throw new BadRequestException(
+        `You are not assigned to this ticket. Assigned to: ${ticket.assigned_to}`,
+      );
+    }
+
+    // Update ticket with resolution details
+    ticket.status = 'resolved';
+    ticket.resolved_at = new Date();
+    ticket.unit_status = completeTicketDto.unit_status;
+    ticket.observation = completeTicketDto.observation;
+    ticket.action_taken = completeTicketDto.action_taken;
+
+    if (completeTicketDto.recommendation) {
+      ticket.recommendation = completeTicketDto.recommendation;
+    }
+
+    if (completeTicketDto.resolution_notes) {
+      ticket.resolution_notes = completeTicketDto.resolution_notes;
+    }
+
+    return await this.ticketRepository.save(ticket);
   }
 }

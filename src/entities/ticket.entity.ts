@@ -55,10 +55,25 @@ export class Ticket {
   description: string;
 
   @Column({ type: 'timestamp', nullable: true })
+  started_at: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
   resolved_at: Date;
 
   @Column({ type: 'timestamp', nullable: true })
   closed_at: Date;
+
+  @Column({ nullable: true })
+  unit_status: string;
+
+  @Column({ type: 'text', nullable: true })
+  observation: string;
+
+  @Column({ type: 'text', nullable: true })
+  action_taken: string;
+
+  @Column({ type: 'text', nullable: true })
+  recommendation: string;
 
   @Column({ type: 'text', nullable: true })
   resolution_notes: string;

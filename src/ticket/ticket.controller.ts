@@ -21,6 +21,8 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { ApproveTicketDto } from './dto/approve-ticket.dto';
 import { RejectTicketDto } from './dto/reject-ticket.dto';
+import { StartWorkDto } from './dto/start-work.dto';
+import { CompleteTicketDto } from './dto/complete-ticket.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -150,6 +152,54 @@ export class TicketController {
       id,
       user.employee_id,
       rejectTicketDto,
+    );
+  }
+
+  @Patch(':id/start-work')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Start working on a ticket (IT Staff only)' })
+  @ApiParam({ name: 'id', description: 'Ticket ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Started working on ticket successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Ticket is not in assigned/approved status or not assigned to you',
+  })
+  @ApiResponse({ status: 404, description: 'Ticket not found' })
+  startWork(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() startWorkDto: StartWorkDto,
+  ) {
+    return this.ticketService.startWork(id, user.employee_id, startWorkDto);
+  }
+
+  @Patch(':id/complete')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Complete a ticket with resolution details (IT Staff only)',
+  })
+  @ApiParam({ name: 'id', description: 'Ticket ID' })
+  @ApiResponse({ status: 200, description: 'Ticket completed successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Ticket is not in progress or not assigned to you',
+  })
+  @ApiResponse({ status: 404, description: 'Ticket not found' })
+  complete(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() completeTicketDto: CompleteTicketDto,
+  ) {
+    return this.ticketService.completeTicket(
+      id,
+      user.employee_id,
+      completeTicketDto,
     );
   }
 
