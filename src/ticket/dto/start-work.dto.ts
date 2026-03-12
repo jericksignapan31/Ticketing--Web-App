@@ -1,3 +1,4 @@
+import { IsString, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class StartWorkDto {
@@ -6,5 +7,7 @@ export class StartWorkDto {
     description: 'Optional initial notes when starting work',
     required: false,
   })
+  @IsString()
+  @IsOptional()
   notes?: string;
 }
