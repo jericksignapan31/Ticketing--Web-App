@@ -31,10 +31,10 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
 
-    // Find user by username and include employee relation
+    // Find user by username and include employee with branch relation
     const user = await this.userAccountRepository.findOne({
       where: { username },
-      relations: ['employee'],
+      relations: ['employee', 'employee.branch'],
     });
 
     if (!user) {
@@ -52,12 +52,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Generate JWT token
+    // Generate JWT token with branch_id
     const payload = {
       sub: user.user_id,
       username: user.username,
       employeeId: user.employee_id,
       role: user.employee?.role || UserRole.EMPLOYEE,
+      branchId: user.employee?.branch_id || null,
     };
 
     return {
@@ -71,6 +72,16 @@ export class AuthService {
           last_name: user.employee.last_name,
           email: user.employee.email,
           role: user.employee.role,
+          branch_id: user.employee.branch_id,
+          branch: user.employee.branch
+            ? {
+                branch_id: user.employee.branch.branch_id,
+                branch_name: user.employee.branch.branch_name,
+                location: user.employee.branch.location,
+                contact_number: user.employee.branch.contact_number,
+                status: user.employee.branch.status,
+              }
+            : null,
         },
       },
     };

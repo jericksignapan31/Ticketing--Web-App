@@ -20,7 +20,10 @@ export class TicketService {
 
   async create(createTicketDto: CreateTicketDto): Promise<Ticket> {
     const ticket = this.ticketRepository.create(createTicketDto);
-    return await this.ticketRepository.save(ticket);
+    const savedTicket = await this.ticketRepository.save(ticket);
+
+    // Return ticket with all relations loaded
+    return await this.findOne(savedTicket.ticket_id);
   }
 
   async findAll(): Promise<Ticket[]> {

@@ -35,16 +35,37 @@ export class AssetController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all assets' })
-  findAll() {
+  @ApiOperation({ summary: 'Get assets (filtered by branch for employees)' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns all assets for admin/supervisor/IT, or branch assets for employees',
+  })
+  findAll(@CurrentUser() user: any) {
+    // If employee role, return only assets from their branch
+    if (user.role === 'employee' && user.branchId) {
+      return this.assetService.findByBranch(user.branchId);
+    }
+    // For admin, supervisor, IT - return all assets
     return this.assetService.findAll();
   }
 
   @Get('search')
   @ApiOperation({
-    summary: 'Search assets by tag, category, model, or serial number',
+    summary:
+      'Search assets by tag, category, model, or serial number (filtered by branch for employees)',
   })
-  search(@Query('q') query: string) {
+  @ApiResponse({
+    status: 200,
+    description: 'Returns matching assets',
+  })
+  search(@Query('q') query: string, @CurrentUser() user: any) {
+    // If employee role, search only within their branch
+    if (user.role === 'employee' && user.branchId) {
+      return this.assetService.searchByBranch(query, user.branchId);
+    }
+
+    // For admin, supervisor, IT - search all assets
     return this.assetService.search(query);
   }
 
@@ -61,6 +82,11 @@ export class AssetController {
     description: 'Employee not found or not assigned to any branch',
   })
   findMyBranchAssets(@CurrentUser() user: any) {
+    // Use branchId from JWT token directly
+    if (user.branchId) {
+      return this.assetService.findByBranch(user.branchId);
+    }
+    // Fallback to old method if branchId not in token
     return this.assetService.findByUserBranch(user.employee_id);
   }
 

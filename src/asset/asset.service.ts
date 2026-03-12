@@ -155,6 +155,44 @@ export class AssetService {
     });
   }
 
+  async searchByBranch(query: string, branch_id: string): Promise<Asset[]> {
+    return await this.assetRepository.find({
+      where: [
+        { asset_tag: Like(`%${query}%`), branch_id },
+        { category: Like(`%${query}%`), branch_id },
+        { model: Like(`%${query}%`), branch_id },
+        { serial_number: Like(`%${query}%`), branch_id },
+      ],
+      relations: ['brand', 'branch', 'assignedEmployee'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async searchByUserBranch(
+    query: string,
+    employee_id: string,
+  ): Promise<Asset[]> {
+    // Get the employee's branch
+    const employee = await this.employeeRepository.findOne({
+      where: { employee_id },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(
+        `Employee with ID '${employee_id}' not found`,
+      );
+    }
+
+    if (!employee.branch_id) {
+      throw new BadRequestException(
+        `Employee '${employee.first_name} ${employee.last_name}' is not assigned to any branch`,
+      );
+    }
+
+    // Search within employee's branch
+    return this.searchByBranch(query, employee.branch_id);
+  }
+
   async findByBranch(branch_id: string): Promise<Asset[]> {
     return await this.assetRepository.find({
       where: { branch_id },
