@@ -9,10 +9,7 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log'],
   });
 
-  // Security: Helmet - Sets various HTTP headers for security
-  app.use(helmet());
-
-  // Security: CORS - Configure allowed origins
+  // Security: CORS - Configure allowed origins (must be before helmet)
   const corsOrigin = process.env.CORS_ORIGIN;
   app.enableCors({
     origin: (origin, callback) => {
@@ -28,28 +25,33 @@ async function bootstrap() {
         return;
       }
 
-      // Production: allow configured origin(s)
-      if (process.env.NODE_ENV === 'production') {
-        const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : [];
+      // Allow configured origin(s)
+      if (corsOrigin) {
+        const allowedOrigins = corsOrigin.split(',').map(o => o.trim());
         if (allowedOrigins.includes(origin)) {
           callback(null, true);
           return;
         }
-        callback(new Error('Not allowed by CORS'));
-        return;
       }
 
       // Development: allow localhost frontend ports
       if (origin.startsWith('http://localhost:')) {
         callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
+        return;
       }
+
+      // Reject — pass false, not an Error (Error causes 500)
+      callback(null, false);
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization',
+    allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
+
+  // Security: Helmet - Sets various HTTP headers for security (after CORS)
+  app.use(helmet());
 
   // Enable global validation
   app.useGlobalPipes(
