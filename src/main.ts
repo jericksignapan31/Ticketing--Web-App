@@ -13,10 +13,34 @@ async function bootstrap() {
   app.use(helmet());
 
   // Security: CORS - Configure allowed origins
+  const corsOrigin = process.env.CORS_ORIGIN;
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests from localhost (any port) or no origin (like Postman)
-      if (!origin || origin.startsWith('http://localhost:')) {
+      // Allow no-origin clients (Postman/server-to-server/Swagger UI)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      // Allow same-origin Swagger UI on Render
+      if (process.env.RENDER_EXTERNAL_URL && origin === process.env.RENDER_EXTERNAL_URL) {
+        callback(null, true);
+        return;
+      }
+
+      // Production: allow configured origin(s)
+      if (process.env.NODE_ENV === 'production') {
+        const allowedOrigins = corsOrigin ? corsOrigin.split(',').map(o => o.trim()) : [];
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error('Not allowed by CORS'));
+        return;
+      }
+
+      // Development: allow localhost frontend ports
+      if (origin.startsWith('http://localhost:')) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -53,10 +77,9 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   const port = process.env.PORT || 3005;
-  await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
-  console.log(
-    `Swagger documentation is available at: http://localhost:${port}/api`,
-  );
+  await app.listen(port, '0.0.0.0');
+  const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
+  console.log(`Application is running on: ${baseUrl}`);
+  console.log(`Swagger documentation is available at: ${baseUrl}/api`);
 }
 bootstrap();

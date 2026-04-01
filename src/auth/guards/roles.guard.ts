@@ -23,6 +23,9 @@ export class RolesGuard implements CanActivate {
       return false; // No user or role info, deny access
     }
 
-    return requiredRoles.some((role) => user.role === role);
+    const normalizedUserRole = String(user.role).toLowerCase();
+    return requiredRoles.some(
+      (role) => normalizedUserRole === String(role).toLowerCase(),
+    );
   }
 }

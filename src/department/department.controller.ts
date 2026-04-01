@@ -9,11 +9,14 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { DepartmentService } from './department.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @ApiTags('departments')
 @Controller('departments')
@@ -65,5 +68,26 @@ export class DepartmentController {
   @ApiOperation({ summary: 'Delete a department (Authenticated)' })
   remove(@Param('id') id: string) {
     return this.departmentService.remove(id);
+  }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard)
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update department active status (Admin only)' })
+  @ApiParam({
+    name: 'id',
+    description: 'Department ID',
+  })
+  @ApiResponse({ status: 200, description: 'Department status updated successfully' })
+  @ApiResponse({ status: 404, description: 'Department not found' })
+  @ApiResponse({ status: 400, description: 'Invalid status value' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
+  updateStatus(
+    @Param('id') id: string,
+    @Body('is_active') is_active: boolean,
+  ) {
+    return this.departmentService.updateStatus(id, is_active);
   }
 }

@@ -62,4 +62,18 @@ export class DepartmentService {
       relations: ['employees'],
     });
   }
+
+  async updateStatus(
+    department_id: string,
+    is_active: boolean,
+  ): Promise<Department> {
+    const department = await this.findOne(department_id);
+
+    if (typeof is_active !== 'boolean') {
+      throw new NotFoundException('Invalid is_active value. Must be true or false');
+    }
+
+    department.is_active = is_active;
+    return await this.departmentRepository.save(department);
+  }
 }

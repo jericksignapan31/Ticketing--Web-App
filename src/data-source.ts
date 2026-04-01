@@ -10,7 +10,7 @@ import { Ticket } from './entities/ticket.entity';
 import { RepairLog } from './entities/repair-log.entity';
 
 // Load environment variables
-config();
+config({ path: '.env' });
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -32,5 +32,8 @@ export const AppDataSource = new DataSource({
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
   logging: true,
-  ssl: process.env.NODE_ENV === 'production' ? false : undefined,
+  ssl:
+    process.env.DB_SSL === 'true'
+      ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' }
+      : undefined,
 });
