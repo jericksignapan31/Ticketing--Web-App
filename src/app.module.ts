@@ -56,7 +56,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
           Ticket,
           RepairLog,
         ],
+        migrations: ['dist/migrations/*.js'],
+        migrationsRun: true,
         synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
+        logging: ['error', 'warn', 'query'],
         ssl:
           configService.get<string>('DB_SSL') === 'true'
             ? {
