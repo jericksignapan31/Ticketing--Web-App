@@ -19,17 +19,21 @@ import { AssetService } from './asset.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @ApiTags('assets')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('assets')
 export class AssetController {
   constructor(private readonly assetService: AssetService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new asset' })
+  @Roles(UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.IT, UserRole.EMPLOYEE)
+  @ApiOperation({ summary: 'Create a new asset (Admin, Supervisor, IT, Employee)' })
   create(@Body() createAssetDto: CreateAssetDto) {
     return this.assetService.create(createAssetDto);
   }
