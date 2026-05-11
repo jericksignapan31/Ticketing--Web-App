@@ -14,65 +14,68 @@ import { Branch } from './branch.entity';
 @Entity('asset')
 export class Asset {
   @PrimaryGeneratedColumn('uuid')
-  asset_id: string;
+  asset_id!: string;
 
   @Column({ unique: true })
-  asset_tag: string;
+  asset_tag!: string;
 
   @Column({ nullable: true })
-  brand_id: string;
+  brand_id?: string;
 
   @Column({ nullable: true })
-  branch_id: string;
+  branch_id?: string;
 
   @Column()
-  category: string;
+  category!: string;
 
   @Column({ nullable: true })
-  model: string;
+  model?: string;
 
   @Column({ nullable: true })
-  serial_number: string;
+  serial_number?: string;
 
   @Column({ default: 'available' })
-  status: string;
+  status!: string;
+
+  @Column({ default: 'good', nullable: true })
+  condition?: string;
 
   @Column({ nullable: true })
-  assigned_to: string;
+  assigned_to?: string;
 
   @Column({ type: 'text', nullable: true })
-  notes: string;
+  notes?: string;
 
   @Column({ type: 'simple-json', nullable: true })
-  specifications: any;
+  specifications?: any;
 
   @Column({ length: 45, nullable: true })
-  ip_address: string;
+  ip_address?: string;
 
   @Column({ length: 17, nullable: true })
-  mac_address: string;
+  mac_address?: string;
 
   @Column({ length: 255, nullable: true })
-  hostname: string;
+  hostname?: string;
 
   @Column({ length: 50, nullable: true })
-  anydesk_id: string;
+  anydesk_id?: string;
 
   @ManyToOne(() => Brand)
   @JoinColumn({ name: 'brand_id' })
-  brand: Brand;
+  brand?: Brand;
 
   @ManyToOne(() => Branch)
   @JoinColumn({ name: 'branch_id' })
-  branch: Branch;
+  branch?: Branch;
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'assigned_to' })
-  assignedEmployee: Employee;
+  assignedEmployee?: Employee;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }
