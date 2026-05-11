@@ -12,24 +12,24 @@ import { Employee } from './employee.entity';
 @Entity('user_account')
 export class UserAccount {
   @PrimaryGeneratedColumn('uuid')
-  user_id: string;
+  user_id!: string;
 
   @Column()
-  employee_id: string;
+  employee_id!: string;
 
   @Column({ unique: true })
-  username: string;
+  username!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @OneToOne(() => Employee, (employee) => employee.userAccount)
   @JoinColumn({ name: 'employee_id' })
-  employee: Employee;
+  employee?: Employee;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }

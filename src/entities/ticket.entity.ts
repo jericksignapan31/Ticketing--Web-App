@@ -13,90 +13,90 @@ import { Asset } from './asset.entity';
 @Entity('ticket')
 export class Ticket {
   @PrimaryGeneratedColumn('uuid')
-  ticket_id: string;
+  ticket_id!: string;
 
   @Column()
-  employee_id: string;
+  employee_id!: string;
 
   @Column({ nullable: true })
-  asset_id: string;
+  asset_id?: string;
 
   @Column({ nullable: true })
-  assigned_to: string;
+  assigned_to?: string;
 
   @Column({ type: 'text', nullable: true })
-  image_url: string;
+  image_url?: string;
 
   @Column()
-  category: string;
+  category!: string;
 
   @Column()
-  priority: string;
+  priority!: string;
 
   @Column({ default: 'pending_approval' })
-  status: string;
+  status!: string;
 
   @Column({ default: 'pending' })
-  approval_status: string;
+  approval_status!: string;
 
   @Column({ nullable: true })
-  approved_by: string;
+  approved_by?: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  approved_at: Date;
+  approved_at?: Date;
 
   @Column({ type: 'text', nullable: true })
-  rejection_reason: string;
+  rejection_reason?: string;
 
   @Column()
-  subject: string;
+  subject!: string;
 
   @Column({ type: 'text' })
-  description: string;
+  description!: string;
 
   @Column({ type: 'timestamp', nullable: true })
-  started_at: Date;
+  started_at?: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  resolved_at: Date;
+  resolved_at?: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  closed_at: Date;
+  closed_at?: Date;
 
   @Column({ nullable: true })
-  unit_status: string;
+  unit_status?: string;
 
   @Column({ type: 'text', nullable: true })
-  observation: string;
+  observation?: string;
 
   @Column({ type: 'text', nullable: true })
-  action_taken: string;
+  action_taken?: string;
 
   @Column({ type: 'text', nullable: true })
-  recommendation: string;
+  recommendation?: string;
 
   @Column({ type: 'text', nullable: true })
-  resolution_notes: string;
+  resolution_notes?: string;
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'employee_id' })
-  reporter: Employee;
+  reporter?: Employee;
 
   @ManyToOne(() => Asset)
   @JoinColumn({ name: 'asset_id' })
-  asset: Asset;
+  asset?: Asset;
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'assigned_to' })
-  assignedEmployee: Employee;
+  assignedEmployee?: Employee;
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'approved_by' })
-  approver: Employee;
+  approver?: Employee;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }

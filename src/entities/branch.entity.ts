@@ -12,29 +12,29 @@ import { Asset } from './asset.entity';
 @Entity('branch')
 export class Branch {
   @PrimaryGeneratedColumn('uuid')
-  branch_id: string;
+  branch_id!: string;
 
   @Column()
-  branch_name: string;
+  branch_name!: string;
 
   @Column({ nullable: true })
-  location: string;
+  location?: string;
 
   @Column({ nullable: true })
-  contact_number: string;
+  contact_number?: string;
 
   @Column({ default: 'active' })
-  status: string;
+  status!: string;
 
   @OneToMany(() => Employee, (employee) => employee.branch)
-  employees: Employee[];
+  employees?: Employee[];
 
   @OneToMany(() => Asset, (asset) => asset.branch)
-  assets: Asset[];
+  assets?: Asset[];
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }

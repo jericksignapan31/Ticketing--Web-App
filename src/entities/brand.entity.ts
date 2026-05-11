@@ -9,23 +9,23 @@ import {
 @Entity('brand')
 export class Brand {
   @PrimaryGeneratedColumn('uuid')
-  brand_id: string;
+  brand_id!: string;
 
   @Column()
-  brand_name: string;
+  brand_name!: string;
 
   @Column({ nullable: true })
-  description: string;
+  description?: string;
 
   @Column({ nullable: true })
-  brand_image_url: string;
+  brand_image_url?: string;
 
   @Column({ type: 'boolean', default: true })
-  status: boolean;
+  status!: boolean;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }

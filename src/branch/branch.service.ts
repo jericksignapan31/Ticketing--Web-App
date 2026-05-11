@@ -18,9 +18,12 @@ export class BranchService {
   }
 
   async findAll(): Promise<Branch[]> {
-    return await this.branchRepository.find({
-      relations: ['employees', 'assets'],
-    });
+    try {
+      return await this.branchRepository.find();
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+      throw error;
+    }
   }
 
   async findOne(branch_id: string): Promise<Branch> {

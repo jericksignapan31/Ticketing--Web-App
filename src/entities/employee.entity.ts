@@ -16,56 +16,56 @@ import { UserRole } from '../common/enums/user-role.enum';
 @Entity('employee')
 export class Employee {
   @PrimaryColumn()
-  employee_id: string;
+  employee_id!: string;
 
   @Column({ nullable: true })
-  branch_id: string;
+  branch_id?: string;
 
   @Column({ nullable: true })
-  department_id: string;
+  department_id?: string;
 
   @Column()
-  first_name: string;
+  first_name!: string;
 
   @Column()
-  last_name: string;
+  last_name!: string;
 
   @Column({ nullable: true })
-  middle_name: string;
+  middle_name?: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column({
     type: 'varchar',
     enum: UserRole,
     default: UserRole.EMPLOYEE,
   })
-  role: UserRole;
+  role!: UserRole;
 
   @Column({ nullable: true })
-  position: string;
+  position?: string;
 
   @Column({ nullable: true })
-  contact_number: string;
+  contact_number?: string;
 
   @Column({ type: 'boolean', default: true })
-  employment_status: boolean;
+  employment_status!: boolean;
 
   @ManyToOne(() => Branch, (branch) => branch.employees)
   @JoinColumn({ name: 'branch_id' })
-  branch: Branch;
+  branch?: Branch;
 
   @ManyToOne(() => Department, (department) => department.employees)
   @JoinColumn({ name: 'department_id' })
-  department: Department;
+  department?: Department;
 
   @OneToOne(() => UserAccount, (userAccount) => userAccount.employee)
-  userAccount: UserAccount;
+  userAccount?: UserAccount;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }
