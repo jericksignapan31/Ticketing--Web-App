@@ -13,6 +13,9 @@ import { Brand } from './entities/brand.entity';
 import { Asset } from './entities/asset.entity';
 import { Ticket } from './entities/ticket.entity';
 import { RepairLog } from './entities/repair-log.entity';
+import { AssetStatusHistory } from './entities/asset-status-history.entity';
+import { AssetAssignmentHistory } from './entities/asset-assignment-history.entity';
+import { AssetMovementHistory } from './entities/asset-movement-history.entity';
 import { AuthModule } from './auth/auth.module';
 import { EmployeeModule } from './employee/employee.module';
 import { BranchModule } from './branch/branch.module';
@@ -55,6 +58,9 @@ import { DashboardModule } from './dashboard/dashboard.module';
           Asset,
           Ticket,
           RepairLog,
+          AssetStatusHistory,
+          AssetAssignmentHistory,
+          AssetMovementHistory,
         ],
         migrations: ['dist/migrations/*.js'],
         migrationsRun: true,

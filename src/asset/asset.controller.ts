@@ -16,8 +16,10 @@ import {
   ApiOperation,
   ApiBearerAuth,
   ApiResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { AssetService } from './asset.service';
+import { AssetHistoryService } from './asset-history.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -31,7 +33,10 @@ import { UserRole } from '../common/enums/user-role.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('assets')
 export class AssetController {
-  constructor(private readonly assetService: AssetService) {}
+  constructor(
+    private readonly assetService: AssetService,
+    private readonly assetHistoryService: AssetHistoryService,
+  ) {}
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.IT, UserRole.EMPLOYEE)
@@ -120,6 +125,53 @@ export class AssetController {
   @ApiOperation({ summary: 'Get assets by status' })
   findByStatus(@Param('status') status: string) {
     return this.assetService.findByStatus(status);
+  }
+
+  @Get(':asset_id/history')
+  @ApiOperation({ summary: 'Get asset history/timeline (status changes, assignments, repairs, movements)' })
+  @ApiQuery({ name: 'limit', required: false, example: 50, description: 'Number of records to return' })
+  @ApiQuery({ name: 'offset', required: false, example: 0, description: 'Pagination offset' })
+  @ApiQuery({ name: 'type', required: false, enum: ['status_change', 'assignment', 'repair', 'movement'], description: 'Filter by event type' })
+  @ApiResponse({
+    status: 200,
+    description: 'Asset history retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Asset not found',
+  })
+  async getAssetHistory(
+    @Param('asset_id') asset_id: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('type') type?: string,
+  ) {
+    try {
+      const parsedLimit = limit ? Math.min(parseInt(limit, 10), 100) : 50;
+      const parsedOffset = offset ? parseInt(offset, 10) : 0;
+
+      const history = await this.assetHistoryService.getAssetHistory(
+        asset_id,
+        parsedLimit,
+        parsedOffset,
+        type,
+      );
+
+      return {
+        success: true,
+        data: history,
+        message: 'Asset history retrieved successfully',
+      };
+    } catch (error) {
+      if (error.status === 404) {
+        return {
+          success: false,
+          error: error.message,
+          assetId: asset_id,
+        };
+      }
+      throw error;
+    }
   }
 
   @Get(':id')
