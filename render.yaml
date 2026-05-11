@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: it-helpdesk-api
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_TYPE
+        value: postgres
+      - key: DB_HOST
+        fromDatabase:
+          name: it-helpdesk-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: it-helpdesk-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: it-helpdesk-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: it-helpdesk-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: it-helpdesk-db
+          property: database
+      - key: DB_SYNCHRONIZE
+        value: 'false'
+      - key: DB_SSL
+        value: 'true'
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        value: 'false'
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+
+databases:
+  - name: it-helpdesk-db
+    databaseName: ithelp_desk
+    user: postgres
+    region: singapore
