@@ -8,6 +8,8 @@ import {
   Delete,
   Query,
   UseGuards,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -34,8 +36,16 @@ export class AssetController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.SUPERVISOR, UserRole.IT, UserRole.EMPLOYEE)
   @ApiOperation({ summary: 'Create a new asset (Admin, Supervisor, IT, Employee)' })
-  create(@Body() createAssetDto: CreateAssetDto) {
-    return this.assetService.create(createAssetDto);
+  async create(@Body() createAssetDto: CreateAssetDto) {
+    try {
+      console.log('Creating asset with DTO:', createAssetDto);
+      const result = await this.assetService.create(createAssetDto);
+      console.log('Asset created successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Asset creation error:', error);
+      throw error;
+    }
   }
 
   @Get()

@@ -3,8 +3,27 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import { AppDataSource } from './data-source';
 
 async function bootstrap() {
+  // Initialize database connection and run migrations
+  try {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+      console.log('✅ Database connection established');
+
+      // Run pending migrations
+      const pendingMigrations = await AppDataSource.showMigrations();
+      console.log('📋 Pending migrations:', pendingMigrations);
+
+      await AppDataSource.runMigrations();
+      console.log('✅ Database migrations completed');
+    }
+  } catch (error) {
+    console.error('❌ Database initialization error:', error);
+    process.exit(1);
+  }
+
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log'],
   });

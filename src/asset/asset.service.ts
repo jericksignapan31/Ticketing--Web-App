@@ -21,45 +21,59 @@ export class AssetService {
   ) {}
 
   async create(createAssetDto: CreateAssetDto): Promise<Asset> {
-    // Check if asset_tag already exists
-    const existingAsset = await this.assetRepository.findOne({
-      where: { asset_tag: createAssetDto.asset_tag },
-    });
-
-    if (existingAsset) {
-      throw new ConflictException(
-        `Asset with tag '${createAssetDto.asset_tag}' already exists`,
-      );
-    }
-
-    // Validate that assigned employee belongs to the same branch
-    if (createAssetDto.assigned_to && createAssetDto.branch_id) {
-      const employee = await this.employeeRepository.findOne({
-        where: { employee_id: createAssetDto.assigned_to },
+    try {
+      // Check if asset_tag already exists
+      const existingAsset = await this.assetRepository.findOne({
+        where: { asset_tag: createAssetDto.asset_tag },
       });
 
-      if (!employee) {
-        throw new NotFoundException(
-          `Employee with ID '${createAssetDto.assigned_to}' not found`,
+      if (existingAsset) {
+        throw new ConflictException(
+          `Asset with tag '${createAssetDto.asset_tag}' already exists`,
         );
       }
 
-      if (employee.branch_id !== createAssetDto.branch_id) {
-        throw new BadRequestException(
-          `Employee '${employee.first_name} ${employee.last_name}' (${employee.employee_id}) does not belong to the selected branch. Employee's branch: ${employee.branch_id}, Asset's branch: ${createAssetDto.branch_id}`,
-        );
+      // Validate that assigned employee belongs to the same branch
+      if (createAssetDto.assigned_to && createAssetDto.branch_id) {
+        const employee = await this.employeeRepository.findOne({
+          where: { employee_id: createAssetDto.assigned_to },
+        });
+
+        if (!employee) {
+          throw new NotFoundException(
+            `Employee with ID '${createAssetDto.assigned_to}' not found`,
+          );
+        }
+
+        if (employee.branch_id !== createAssetDto.branch_id) {
+          throw new BadRequestException(
+            `Employee '${employee.first_name} ${employee.last_name}' (${employee.employee_id}) does not belong to the selected branch. Employee's branch: ${employee.branch_id}, Asset's branch: ${createAssetDto.branch_id}`,
+          );
+        }
+
+        // Check if employee is active
+        if (!employee.employment_status) {
+          throw new BadRequestException(
+            `Cannot assign asset to inactive employee '${employee.first_name} ${employee.last_name}' (${employee.employee_id})`,
+          );
+        }
       }
 
-      // Check if employee is active
-      if (!employee.employment_status) {
-        throw new BadRequestException(
-          `Cannot assign asset to inactive employee '${employee.first_name} ${employee.last_name}' (${employee.employee_id})`,
-        );
+      const asset = this.assetRepository.create(createAssetDto);
+      return await this.assetRepository.save(asset);
+    } catch (error) {
+      console.error('Error creating asset:', error);
+      if (
+        error instanceof ConflictException ||
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
       }
+      throw new BadRequestException(
+        `Failed to create asset: ${error.message || 'Unknown error'}`,
+      );
     }
-
-    const asset = this.assetRepository.create(createAssetDto);
-    return await this.assetRepository.save(asset);
   }
 
   async findAll(): Promise<Asset[]> {

@@ -102,6 +102,16 @@ export class CreateAssetDto {
   hostname?: string;
 
   @ApiProperty({
+    example: 'good',
+    description: 'Asset condition (excellent, good, fair, poor, broken)',
+    required: false,
+    default: 'good',
+  })
+  @IsString()
+  @IsOptional()
+  condition?: string;
+
+  @ApiProperty({
     example: '987654321',
     description: 'AnyDesk remote support ID',
     required: false,
