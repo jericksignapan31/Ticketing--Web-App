@@ -2,41 +2,37 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AddAssetCondition1715000000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Check if the condition column already exists
-    const hasColumn = await queryRunner.hasColumn('asset', 'condition');
+    // First, check if the condition column already exists
+    const table = await queryRunner.getTable('asset');
+    const hasConditionColumn = table?.columns.some(col => col.name === 'condition');
 
-    if (!hasColumn) {
-      // Add the condition column if it doesn't exist
+    if (!hasConditionColumn) {
+      console.log('🔧 Adding condition column to asset table...');
+      
+      // Add the condition column with default value
       await queryRunner.query(
-        `ALTER TABLE "asset" ADD COLUMN "condition" varchar(20) NOT NULL DEFAULT 'good'`,
+        `ALTER TABLE "asset" ADD COLUMN IF NOT EXISTS "condition" VARCHAR(20) DEFAULT 'good'`,
       );
 
-      // Add constraint for valid condition values
-      await queryRunner.query(
-        `ALTER TABLE "asset" ADD CONSTRAINT "CHK_asset_condition" CHECK ("condition" IN ('excellent', 'good', 'fair', 'poor', 'broken'))`,
-      );
-
-      console.log('✅ Added condition column to asset table');
+      console.log('✅ Condition column added successfully');
     } else {
-      console.log('ℹ️ Condition column already exists in asset table');
+      console.log('ℹ️ Condition column already exists, skipping...');
     }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const hasColumn = await queryRunner.hasColumn('asset', 'condition');
+    const table = await queryRunner.getTable('asset');
+    const hasConditionColumn = table?.columns.some(col => col.name === 'condition');
 
-    if (hasColumn) {
-      // Remove the constraint first
+    if (hasConditionColumn) {
+      console.log('🔧 Removing condition column from asset table...');
+      
       await queryRunner.query(
-        `ALTER TABLE "asset" DROP CONSTRAINT IF EXISTS "CHK_asset_condition"`,
+        `ALTER TABLE "asset" DROP COLUMN IF EXISTS "condition"`,
       );
 
-      // Remove the column
-      await queryRunner.query(
-        `ALTER TABLE "asset" DROP COLUMN "condition"`,
-      );
-
-      console.log('✅ Removed condition column from asset table');
+      console.log('✅ Condition column removed successfully');
     }
   }
 }
+

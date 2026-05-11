@@ -37,7 +37,7 @@ export class Asset {
   @Column({ default: 'available' })
   status!: string;
 
-  @Column({ default: 'good', nullable: true })
+  @Column({ default: 'good', nullable: true, type: 'varchar', length: 20 })
   condition?: string;
 
   @Column({ nullable: true })

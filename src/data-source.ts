@@ -29,9 +29,10 @@ export const AppDataSource = new DataSource({
     Ticket,
     RepairLog,
   ],
-  migrations: ['src/migrations/*.ts'],
+  migrations: ['src/migrations/*.ts', 'dist/migrations/*.js'],
   synchronize: false,
-  logging: true,
+  logging: ['query', 'error', 'warn'],
+  migrationsRun: true, // Automatically run migrations on startup
   ssl:
     process.env.DB_SSL === 'true'
       ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' }
