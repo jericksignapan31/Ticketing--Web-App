@@ -16,6 +16,8 @@ import { RepairLog } from './entities/repair-log.entity';
 import { AssetStatusHistory } from './entities/asset-status-history.entity';
 import { AssetAssignmentHistory } from './entities/asset-assignment-history.entity';
 import { AssetMovementHistory } from './entities/asset-movement-history.entity';
+import { Message } from './chat/entities/message.entity';
+import { Conversation } from './chat/entities/conversation.entity';
 import { AuthModule } from './auth/auth.module';
 import { EmployeeModule } from './employee/employee.module';
 import { BranchModule } from './branch/branch.module';
@@ -26,6 +28,7 @@ import { TicketModule } from './ticket/ticket.module';
 import { RepairLogModule } from './repair-log/repair-log.module';
 import { UserAccountModule } from './user-account/user-account.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -61,6 +64,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
           AssetStatusHistory,
           AssetAssignmentHistory,
           AssetMovementHistory,
+          Message,
+          Conversation,
         ],
         migrations: ['dist/migrations/*.js'],
         migrationsRun: true,
@@ -86,6 +91,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     RepairLogModule,
     UserAccountModule,
     DashboardModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [

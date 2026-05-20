@@ -8,6 +8,8 @@ import { Brand } from './entities/brand.entity';
 import { Asset } from './entities/asset.entity';
 import { Ticket } from './entities/ticket.entity';
 import { RepairLog } from './entities/repair-log.entity';
+import { Message } from './chat/entities/message.entity';
+import { Conversation } from './chat/entities/conversation.entity';
 
 // Load environment variables
 config({ path: '.env' });
@@ -28,8 +30,10 @@ export const AppDataSource = new DataSource({
     Asset,
     Ticket,
     RepairLog,
+    Message,
+    Conversation,
   ],
-  migrations: ['src/migrations/*.ts', 'dist/migrations/*.js'],
+  migrations: ['dist/migrations/*.js'],
   synchronize: false,
   logging: ['query', 'error', 'warn'],
   migrationsRun: true, // Automatically run migrations on startup
