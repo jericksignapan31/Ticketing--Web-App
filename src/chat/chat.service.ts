@@ -154,18 +154,43 @@ export class ChatService {
       );
     }
 
-    const message = this.messageRepository.create({
-      ...createMessageDto,
-      sender_id: userId,
-    });
+    try {
+      const message = this.messageRepository.create({
+        conversation_id: createMessageDto.conversation_id,
+        sender_id: userId,
+        content: createMessageDto.content,
+        is_read: false,
+      });
 
-    // Update conversation updated_at timestamp
-    await this.conversationRepository.update(
-      { conversation_id: createMessageDto.conversation_id },
-      { updated_at: new Date() },
-    );
+      console.log(`[Chat sendMessage] Creating message:`, {
+        conversation_id: message.conversation_id,
+        sender_id: message.sender_id,
+        content_length: message.content?.length,
+      });
 
-    return this.messageRepository.save(message);
+      const savedMessage = await this.messageRepository.save(message);
+
+      console.log(`[Chat sendMessage] Message saved successfully:`, {
+        message_id: savedMessage.message_id,
+        conversation_id: savedMessage.conversation_id,
+      });
+
+      // Update conversation updated_at timestamp
+      await this.conversationRepository.update(
+        { conversation_id: createMessageDto.conversation_id },
+        { updated_at: new Date() },
+      );
+
+      return savedMessage;
+    } catch (error) {
+      console.error(`[Chat sendMessage] Error creating/saving message:`, {
+        error: error instanceof Error ? error.message : String(error),
+        conversationId: createMessageDto.conversation_id,
+        userId: userId,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }
 
   async getConversationMessages(
