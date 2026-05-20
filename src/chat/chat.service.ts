@@ -21,18 +21,36 @@ export class ChatService {
     createConversationDto: CreateConversationDto,
     userId: string,
   ): Promise<Conversation> {
-    // Add current user as participant
-    const participants = createConversationDto.participant_ids || [];
-    if (!participants.includes(userId)) {
-      participants.push(userId);
+    // Add current user as participant and normalize IDs to strings
+    const participants = (createConversationDto.participant_ids || [])
+      .map((id) => String(id).trim())
+      .filter((id) => id.length > 0);
+
+    // Ensure current user is in participants
+    const normalizedUserId = String(userId).trim();
+    if (!participants.some((p) => p.toLowerCase() === normalizedUserId.toLowerCase())) {
+      participants.push(normalizedUserId);
     }
+
+    console.log(`[Chat createConversation] Creating conversation with participants:`, {
+      providedParticipants: createConversationDto.participant_ids,
+      currentUserId: userId,
+      normalizedUserId: normalizedUserId,
+      finalParticipants: participants,
+    });
 
     const conversation = this.conversationRepository.create({
       ...createConversationDto,
       participant_ids: participants,
     });
 
-    return this.conversationRepository.save(conversation);
+    const saved = await this.conversationRepository.save(conversation);
+    console.log(`[Chat createConversation] Conversation saved:`, {
+      conversationId: saved.conversation_id,
+      participants: saved.participant_ids,
+    });
+
+    return saved;
   }
 
   async getConversations(userId: string, page: number = 1, limit: number = 50): Promise<{ data: Conversation[]; total: number; page: number; limit: number }> {
@@ -78,6 +96,21 @@ export class ChatService {
 
   // ============ MESSAGE METHODS ============
 
+  /**
+   * Normalize and check if user is participant
+   * Handles type mismatches between UUID and string formats
+   */
+  private isUserParticipant(participantIds: string[] | undefined, userId: string): boolean {
+    if (!participantIds || participantIds.length === 0) {
+      return false;
+    }
+
+    const normalizedUserId = String(userId).toLowerCase().trim();
+    return participantIds.some(
+      (id) => String(id).toLowerCase().trim() === normalizedUserId,
+    );
+  }
+
   async sendMessage(
     createMessageDto: CreateMessageDto,
     userId: string,
@@ -91,13 +124,34 @@ export class ChatService {
       throw new NotFoundException('Conversation not found');
     }
 
-    // Verify user is participant
-    const isParticipant =
-      conversation.participant_ids?.includes(userId) ||
-      conversation.type === 'TICKET';
+    console.log(`[Chat sendMessage] Checking participant:`, {
+      conversationId: createMessageDto.conversation_id,
+      userId: userId,
+      participantIds: conversation.participant_ids,
+      conversationType: conversation.type,
+    });
 
-    if (!isParticipant) {
-      throw new BadRequestException('User is not a participant in this chat');
+    // Verify user is participant (with type normalization)
+    const isDirectParticipant = this.isUserParticipant(
+      conversation.participant_ids,
+      userId,
+    );
+    const isTicketConversation = conversation.type === 'TICKET';
+
+    console.log(`[Chat sendMessage] Participant check result:`, {
+      isDirectParticipant,
+      isTicketConversation,
+      allowed: isDirectParticipant || isTicketConversation,
+    });
+
+    if (!isDirectParticipant && !isTicketConversation) {
+      console.error(
+        `[Chat] User ${userId} not in participants:`,
+        conversation.participant_ids,
+      );
+      throw new BadRequestException(
+        `User is not a participant in this chat. Participants: ${conversation.participant_ids?.join(', ') || 'none'}`,
+      );
     }
 
     const message = this.messageRepository.create({
@@ -179,6 +233,10 @@ export class ChatService {
     otherUserId: string,
     currentUserId: string,
   ): Promise<Conversation> {
+    // Normalize IDs
+    const normalizedCurrentUserId = String(currentUserId).trim().toLowerCase();
+    const normalizedOtherUserId = String(otherUserId).trim().toLowerCase();
+
     // Check if direct conversation already exists
     const conversations = await this.conversationRepository.find({
       where: {
@@ -186,22 +244,29 @@ export class ChatService {
       },
     });
 
-    let conversation = conversations.find((c) =>
-      c.participant_ids?.includes(otherUserId),
-    );
+    const existingConversation = conversations.find((c) => {
+      if (!c.participant_ids || c.participant_ids.length < 2) return false;
+      const normalizedParticipants = c.participant_ids.map((id) =>
+        String(id).trim().toLowerCase(),
+      );
+      return (
+        normalizedParticipants.includes(normalizedCurrentUserId) &&
+        normalizedParticipants.includes(normalizedOtherUserId)
+      );
+    });
 
-    if (
-      conversation &&
-      conversation.participant_ids?.includes(currentUserId)
-    ) {
-      return conversation;
+    if (existingConversation) {
+      return existingConversation;
     }
 
     // Create new direct conversation
     const newConversation = new Conversation();
     newConversation.type = 'DIRECT' as ConversationType;
     newConversation.name = `Chat between ${currentUserId} and ${otherUserId}`;
-    newConversation.participant_ids = [currentUserId, otherUserId];
+    newConversation.participant_ids = [
+      String(currentUserId).trim(),
+      String(otherUserId).trim(),
+    ];
 
     return this.conversationRepository.save(newConversation);
   }
