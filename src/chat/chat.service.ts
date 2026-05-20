@@ -94,7 +94,7 @@ export class ChatService {
   async getAllConversationsWithMessages(userId: string): Promise<Conversation[]> {
     const conversations = await this.conversationRepository
       .createQueryBuilder('c')
-      .leftJoinAndSelect('c.messages', 'm', 'm.deleted_at IS NULL')
+      .leftJoinAndSelect('c.messages', 'm')
       .where('c.participant_ids LIKE :userId', { userId: `%${userId}%` })
       .orWhere('c.ticket_id IS NOT NULL')
       .orderBy('c.updated_at', 'DESC')
