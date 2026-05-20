@@ -54,24 +54,28 @@ export class ChatService {
   }
 
   async getConversations(userId: string, page: number = 1, limit: number = 50): Promise<{ data: Conversation[]; total: number; page: number; limit: number }> {
-    const skip = (page - 1) * limit;
+    try {
+      const skip = (page - 1) * limit;
 
-    const [conversations, total] = await this.conversationRepository
-      .createQueryBuilder('c')
-      .leftJoinAndSelect('c.messages', 'm')
-      .where('c.participant_ids LIKE :userId', { userId: `%${userId}%` })
-      .orWhere('c.ticket_id IS NOT NULL')
-      .orderBy('c.updated_at', 'DESC')
-      .skip(skip)
-      .take(limit)
-      .getManyAndCount();
+      const [conversations, total] = await this.conversationRepository
+        .createQueryBuilder('c')
+        .leftJoinAndSelect('c.messages', 'm')
+        .where(`c.participant_ids::text LIKE :userId`, { userId: `%${userId}%` })
+        .orderBy('c.updated_at', 'DESC')
+        .skip(skip)
+        .take(limit)
+        .getManyAndCount();
 
-    return {
-      data: conversations,
-      total,
-      page,
-      limit,
-    };
+      return {
+        data: conversations,
+        total,
+        page,
+        limit,
+      };
+    } catch (error) {
+      console.error('[Chat getConversations] Error loading conversations:', error);
+      return { data: [], total: 0, page, limit };
+    }
   }
 
   async getConversationById(conversationId: string): Promise<Conversation> {
@@ -92,18 +96,24 @@ export class ChatService {
    * Perfect for chat UI initialization - no need for multiple API calls
    */
   async getAllConversationsWithMessages(userId: string): Promise<Conversation[]> {
-    const conversations = await this.conversationRepository
-      .createQueryBuilder('c')
-      .leftJoinAndSelect('c.messages', 'm')
-      .where('c.participant_ids LIKE :userId', { userId: `%${userId}%` })
-      .orWhere('c.ticket_id IS NOT NULL')
-      .orderBy('c.updated_at', 'DESC')
-      .addOrderBy('m.created_at', 'ASC')
-      .getMany();
+    try {
+      // Use raw query for better compatibility with simple-array types
+      const conversations = await this.conversationRepository
+        .createQueryBuilder('c')
+        .leftJoinAndSelect('c.messages', 'm')
+        .leftJoinAndSelect('m.sender', 's')
+        .where(`c.participant_ids::text LIKE :userId`, { userId: `%${userId}%` })
+        .orderBy('c.updated_at', 'DESC')
+        .addOrderBy('m.created_at', 'ASC')
+        .getMany();
 
-    console.log(`[Chat getAllConversationsWithMessages] Loaded ${conversations.length} conversations with messages for user ${userId}`);
-    
-    return conversations;
+      console.log(`[Chat getAllConversationsWithMessages] ✅ Loaded ${conversations.length} conversations with messages for user ${userId}`);
+      
+      return conversations;
+    } catch (error: any) {
+      console.error('[Chat getAllConversationsWithMessages] ❌ Error loading conversations:', error);
+      throw new BadRequestException(`Failed to load conversations: ${error?.message || 'Unknown error'}`);
+    }
   }
 
   async deleteConversation(conversationId: string): Promise<void> {
@@ -314,4 +324,6 @@ export class ChatService {
 
     return this.conversationRepository.save(newConversation);
   }
+
 }
+
