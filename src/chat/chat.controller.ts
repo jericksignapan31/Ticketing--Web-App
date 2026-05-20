@@ -67,6 +67,17 @@ export class ChatController {
     return this.chatService.getConversations(userId, pageNum, limitNum);
   }
 
+  @Get('all-conversations-with-messages')
+  @ApiOperation({ summary: 'Get ALL conversations with ALL messages in one call' })
+  @ApiResponse({
+    status: 200,
+    description: 'All conversations with their messages loaded',
+    type: [ConversationResponseDto],
+  })
+  async getAllConversationsWithMessages(@CurrentUser() userId: string) {
+    return this.chatService.getAllConversationsWithMessages(userId);
+  }
+
   @Get('conversations/:conversationId')
   @ApiOperation({ summary: 'Get conversation details' })
   @ApiParam({ name: 'conversationId', description: 'Conversation ID' })

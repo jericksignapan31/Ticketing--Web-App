@@ -87,6 +87,25 @@ export class ChatService {
     return conversation;
   }
 
+  /**
+   * Get all conversations with all their messages in one call
+   * Perfect for chat UI initialization - no need for multiple API calls
+   */
+  async getAllConversationsWithMessages(userId: string): Promise<Conversation[]> {
+    const conversations = await this.conversationRepository
+      .createQueryBuilder('c')
+      .leftJoinAndSelect('c.messages', 'm', 'm.deleted_at IS NULL')
+      .where('c.participant_ids LIKE :userId', { userId: `%${userId}%` })
+      .orWhere('c.ticket_id IS NOT NULL')
+      .orderBy('c.updated_at', 'DESC')
+      .addOrderBy('m.created_at', 'ASC')
+      .getMany();
+
+    console.log(`[Chat getAllConversationsWithMessages] Loaded ${conversations.length} conversations with messages for user ${userId}`);
+    
+    return conversations;
+  }
+
   async deleteConversation(conversationId: string): Promise<void> {
     const result = await this.conversationRepository.delete(conversationId);
     if (result.affected === 0) {
