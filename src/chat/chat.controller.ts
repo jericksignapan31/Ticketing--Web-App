@@ -43,8 +43,9 @@ export class ChatController {
   })
   async createConversation(
     @Body() createConversationDto: CreateConversationDto,
-    @CurrentUser() userId: string,
+    @CurrentUser() user: any,
   ) {
+    const userId = user.sub || user.user_id || user.id;
     return this.chatService.createConversation(createConversationDto, userId);
   }
 
@@ -58,10 +59,11 @@ export class ChatController {
     type: [ConversationResponseDto],
   })
   async getConversations(
-    @CurrentUser() userId: string,
+    @CurrentUser() user: any,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
+    const userId = user.sub || user.user_id || user.id;
     const pageNum = page ? Math.max(1, parseInt(page, 10)) : 1;
     const limitNum = limit ? Math.min(parseInt(limit, 10), 100) : 50;
     return this.chatService.getConversations(userId, pageNum, limitNum);
@@ -85,7 +87,8 @@ export class ChatController {
     description: 'All conversations with their messages loaded',
     type: [ConversationResponseDto],
   })
-  async getAllConversationsWithMessages(@CurrentUser() userId: string) {
+  async getAllConversationsWithMessages(@CurrentUser() user: any) {
+    const userId = user.sub || user.user_id || user.id;
     return this.chatService.getAllConversationsWithMessages(userId);
   }
 
@@ -120,11 +123,12 @@ export class ChatController {
   })
   async createDirectConversation(
     @Param('otherUserId') otherUserId: string,
-    @CurrentUser() userId: string,
+    @CurrentUser() user: any,
   ) {
     if (!otherUserId) {
       throw new BadRequestException('Other user ID is required');
     }
+    const userId = user.sub || user.user_id || user.id;
     return this.chatService.createDirectConversation(otherUserId, userId);
   }
 
@@ -139,8 +143,9 @@ export class ChatController {
   })
   async sendMessage(
     @Body() createMessageDto: CreateMessageDto,
-    @CurrentUser() userId: string,
+    @CurrentUser() user: any,
   ) {
+    const userId = user.sub || user.user_id || user.id;
     return this.chatService.sendMessage(createMessageDto, userId);
   }
 
@@ -185,8 +190,9 @@ export class ChatController {
   @ApiResponse({ status: 200, description: 'Conversation marked as read' })
   async markConversationAsRead(
     @Param('conversationId') conversationId: string,
-    @CurrentUser() userId: string,
+    @CurrentUser() user: any,
   ) {
+    const userId = user.sub || user.user_id || user.id;
     return this.chatService.markConversationAsRead(conversationId, userId);
   }
 
