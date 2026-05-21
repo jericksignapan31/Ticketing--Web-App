@@ -100,6 +100,8 @@ export class ChatService {
       const personalConversations = await this.conversationRepository
         .createQueryBuilder('c')
         .leftJoinAndSelect('c.messages', 'm')
+        .leftJoinAndSelect('m.sender', 's')
+        .leftJoinAndSelect('s.employee', 'e')
         .where(`c.participant_ids::text LIKE :userId`, { userId: `%${userId}%` })
         .orderBy('c.updated_at', 'DESC')
         .skip(skip)
@@ -110,6 +112,8 @@ export class ChatService {
       const groupConversations = await this.conversationRepository
         .createQueryBuilder('c')
         .leftJoinAndSelect('c.messages', 'm')
+        .leftJoinAndSelect('m.sender', 's')
+        .leftJoinAndSelect('s.employee', 'e')
         .where('c.type = :type', { type: ConversationType.GROUP })
         .orderBy('c.updated_at', 'DESC')
         .getMany();
@@ -136,10 +140,14 @@ export class ChatService {
   }
 
   async getConversationById(conversationId: string): Promise<Conversation> {
-    const conversation = await this.conversationRepository.findOne({
-      where: { conversation_id: conversationId },
-      relations: ['messages', 'messages.sender'],
-    });
+    const conversation = await this.conversationRepository
+      .createQueryBuilder('c')
+      .where('c.conversation_id = :conversationId', { conversationId })
+      .leftJoinAndSelect('c.messages', 'm')
+      .leftJoinAndSelect('m.sender', 's')
+      .leftJoinAndSelect('s.employee', 'e')
+      .orderBy('m.created_at', 'ASC')
+      .getOne();
 
     if (!conversation) {
       throw new NotFoundException('Conversation not found');
@@ -160,6 +168,7 @@ export class ChatService {
         .createQueryBuilder('c')
         .leftJoinAndSelect('c.messages', 'm')
         .leftJoinAndSelect('m.sender', 's')
+        .leftJoinAndSelect('s.employee', 'e')
         .where(`c.participant_ids::text LIKE :userId`, { userId: `%${userId}%` })
         .orderBy('c.updated_at', 'DESC')
         .addOrderBy('m.created_at', 'ASC')
@@ -170,6 +179,7 @@ export class ChatService {
         .createQueryBuilder('c')
         .leftJoinAndSelect('c.messages', 'm')
         .leftJoinAndSelect('m.sender', 's')
+        .leftJoinAndSelect('s.employee', 'e')
         .where('c.type = :type', { type: ConversationType.GROUP })
         .orderBy('c.updated_at', 'DESC')
         .addOrderBy('m.created_at', 'ASC')
@@ -287,7 +297,15 @@ export class ChatService {
         { updated_at: new Date() },
       );
 
-      return savedMessage;
+      // Reload message with sender and employee details
+      const messageWithDetails = await this.messageRepository
+        .createQueryBuilder('m')
+        .where('m.message_id = :messageId', { messageId: savedMessage.message_id })
+        .leftJoinAndSelect('m.sender', 's')
+        .leftJoinAndSelect('s.employee', 'e')
+        .getOne();
+
+      return messageWithDetails || savedMessage;
     } catch (error) {
       console.error(`[Chat sendMessage] Error creating/saving message:`, {
         error: error instanceof Error ? error.message : String(error),
@@ -308,6 +326,7 @@ export class ChatService {
       .createQueryBuilder('m')
       .where('m.conversation_id = :conversationId', { conversationId })
       .leftJoinAndSelect('m.sender', 'sender')
+      .leftJoinAndSelect('sender.employee', 'employee')
       .orderBy('m.created_at', 'DESC')
       .take(limit)
       .skip(offset)
