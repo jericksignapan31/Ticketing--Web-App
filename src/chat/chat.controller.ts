@@ -67,6 +67,17 @@ export class ChatController {
     return this.chatService.getConversations(userId, pageNum, limitNum);
   }
 
+  @Get('general')
+  @ApiOperation({ summary: 'Get or create general group chat (visible to all users)' })
+  @ApiResponse({
+    status: 200,
+    description: 'General group chat',
+    type: ConversationResponseDto,
+  })
+  async getGeneralChat() {
+    return this.chatService.getGeneralChat();
+  }
+
   @Get('all-conversations-with-messages')
   @ApiOperation({ summary: 'Get ALL conversations with ALL messages in one call' })
   @ApiResponse({

@@ -8,12 +8,51 @@ import { CreateConversationDto } from './dto/conversation.dto';
 
 @Injectable()
 export class ChatService {
+  private readonly GENERAL_CHAT_NAME = 'General';
+
   constructor(
     @InjectRepository(Message)
     private messageRepository: Repository<Message>,
     @InjectRepository(Conversation)
     private conversationRepository: Repository<Conversation>,
   ) {}
+
+  // ============ GENERAL CHAT INITIALIZATION ============
+
+  /**
+   * Ensures a general group chat exists that all users can access
+   */
+  async initializeGeneralChat(): Promise<Conversation> {
+    // Check if general chat already exists
+    const existingGeneral = await this.conversationRepository.findOne({
+      where: {
+        name: this.GENERAL_CHAT_NAME,
+        type: ConversationType.GROUP,
+      },
+    });
+
+    if (existingGeneral) {
+      return existingGeneral;
+    }
+
+    // Create general chat
+    const generalChat = this.conversationRepository.create({
+      name: this.GENERAL_CHAT_NAME,
+      type: ConversationType.GROUP,
+      participant_ids: [], // Empty array means all users can access
+    });
+
+    const saved = await this.conversationRepository.save(generalChat);
+    console.log(`[Chat] General chat created: ${saved.conversation_id}`);
+    return saved;
+  }
+
+  /**
+   * Get the general chat (creates if doesn't exist)
+   */
+  async getGeneralChat(): Promise<Conversation> {
+    return this.initializeGeneralChat();
+  }
 
   // ============ CONVERSATION METHODS ============
 
@@ -57,7 +96,8 @@ export class ChatService {
     try {
       const skip = (page - 1) * limit;
 
-      const [conversations, total] = await this.conversationRepository
+      // Get user's personal conversations (where they're a participant)
+      const personalConversations = await this.conversationRepository
         .createQueryBuilder('c')
         .leftJoinAndSelect('c.messages', 'm')
         .where(`c.participant_ids::text LIKE :userId`, { userId: `%${userId}%` })
@@ -66,8 +106,25 @@ export class ChatService {
         .take(limit)
         .getManyAndCount();
 
+      // Get all group chats visible to everyone (general + public groups)
+      const groupConversations = await this.conversationRepository
+        .createQueryBuilder('c')
+        .leftJoinAndSelect('c.messages', 'm')
+        .where('c.type = :type', { type: ConversationType.GROUP })
+        .orderBy('c.updated_at', 'DESC')
+        .getMany();
+
+      // Combine and deduplicate
+      const allConversations = [...personalConversations[0], ...groupConversations];
+      const uniqueConversations = Array.from(
+        new Map(allConversations.map(c => [c.conversation_id, c])).values()
+      ).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+       .slice(skip, skip + limit);
+
+      const total = uniqueConversations.length;
+
       return {
-        data: conversations,
+        data: uniqueConversations,
         total,
         page,
         limit,
@@ -94,11 +151,12 @@ export class ChatService {
   /**
    * Get all conversations with all their messages in one call
    * Perfect for chat UI initialization - no need for multiple API calls
+   * Now includes group chats visible to all users
    */
   async getAllConversationsWithMessages(userId: string): Promise<Conversation[]> {
     try {
-      // Use raw query for better compatibility with simple-array types
-      const conversations = await this.conversationRepository
+      // Get user's personal conversations (where they're a participant)
+      const personalConversations = await this.conversationRepository
         .createQueryBuilder('c')
         .leftJoinAndSelect('c.messages', 'm')
         .leftJoinAndSelect('m.sender', 's')
@@ -107,9 +165,25 @@ export class ChatService {
         .addOrderBy('m.created_at', 'ASC')
         .getMany();
 
-      console.log(`[Chat getAllConversationsWithMessages] ✅ Loaded ${conversations.length} conversations with messages for user ${userId}`);
+      // Get all group chats visible to everyone
+      const groupConversations = await this.conversationRepository
+        .createQueryBuilder('c')
+        .leftJoinAndSelect('c.messages', 'm')
+        .leftJoinAndSelect('m.sender', 's')
+        .where('c.type = :type', { type: ConversationType.GROUP })
+        .orderBy('c.updated_at', 'DESC')
+        .addOrderBy('m.created_at', 'ASC')
+        .getMany();
+
+      // Combine and deduplicate
+      const allConversations = [...personalConversations, ...groupConversations];
+      const uniqueConversations = Array.from(
+        new Map(allConversations.map(c => [c.conversation_id, c])).values()
+      ).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+      console.log(`[Chat getAllConversationsWithMessages] ✅ Loaded ${uniqueConversations.length} conversations with messages for user ${userId}`);
       
-      return conversations;
+      return uniqueConversations;
     } catch (error: any) {
       console.error('[Chat getAllConversationsWithMessages] ❌ Error loading conversations:', error);
       throw new BadRequestException(`Failed to load conversations: ${error?.message || 'Unknown error'}`);
@@ -160,26 +234,29 @@ export class ChatService {
       conversationType: conversation.type,
     });
 
-    // Verify user is participant (with type normalization)
+    // Verify user is allowed to send message
     const isDirectParticipant = this.isUserParticipant(
       conversation.participant_ids,
       userId,
     );
-    const isTicketConversation = conversation.type === 'TICKET';
+    const isTicketConversation = conversation.type === ConversationType.TICKET;
+    const isGroupConversation = conversation.type === ConversationType.GROUP;
 
     console.log(`[Chat sendMessage] Participant check result:`, {
       isDirectParticipant,
       isTicketConversation,
-      allowed: isDirectParticipant || isTicketConversation,
+      isGroupConversation,
+      allowed: isDirectParticipant || isTicketConversation || isGroupConversation,
     });
 
-    if (!isDirectParticipant && !isTicketConversation) {
+    // Allow: direct participants, ticket conversations, or any user in group chats
+    if (!isDirectParticipant && !isTicketConversation && !isGroupConversation) {
       console.error(
-        `[Chat] User ${userId} not in participants:`,
+        `[Chat] User ${userId} not allowed to send message. Conversation type: ${conversation.type}`,
         conversation.participant_ids,
       );
       throw new BadRequestException(
-        `User is not a participant in this chat. Participants: ${conversation.participant_ids?.join(', ') || 'none'}`,
+        `User is not allowed to send messages in this chat.`,
       );
     }
 
