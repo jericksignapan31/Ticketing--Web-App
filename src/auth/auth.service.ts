@@ -219,47 +219,65 @@ export class AuthService {
       await this.dataSource.transaction(async (manager) => {
         console.log('📦 Starting transaction...');
         
-        // Create employee with employment_status: false (inactive)
-        const employee = new Employee();
-        employee.branch_id = signupDto.branch_id;
-        employee.department_id = signupDto.department_id;
-        employee.first_name = signupDto.first_name;
-        employee.last_name = signupDto.last_name;
-        employee.middle_name = signupDto.middle_name;
-        employee.email = signupDto.email;
-        employee.role = signupDto.role || UserRole.EMPLOYEE;
-        employee.position = signupDto.position;
-        employee.contact_number = signupDto.contact_number;
-        employee.employment_status = false; // Inactive until admin verifies
-        
-        const savedEmployee = await manager.save(employee);
-        console.log('✅ Employee created:', {
-          employee_id: savedEmployee.employee_id,
-          email: savedEmployee.email,
-          branch_id: savedEmployee.branch_id,
-          department_id: savedEmployee.department_id,
-        });
+        try {
+          // Create employee with employment_status: false (inactive)
+          const employee = new Employee();
+          employee.branch_id = signupDto.branch_id;
+          employee.department_id = signupDto.department_id;
+          employee.first_name = signupDto.first_name;
+          employee.last_name = signupDto.last_name;
+          employee.middle_name = signupDto.middle_name;
+          employee.email = signupDto.email;
+          employee.role = signupDto.role || UserRole.EMPLOYEE;
+          employee.position = signupDto.position;
+          employee.contact_number = signupDto.contact_number;
+          employee.employment_status = false; // Inactive until admin verifies
+          
+          console.log('💾 Saving employee with data:', {
+            email: employee.email,
+            branch_id: employee.branch_id,
+            department_id: employee.department_id,
+          });
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(
-          temporaryPassword,
-          SecurityConfig.password.saltRounds,
-        );
-        console.log('✅ Password hashed');
+          const savedEmployee = await manager.save(Employee, employee);
+          console.log('✅ Employee created:', {
+            employee_id: savedEmployee.employee_id,
+            email: savedEmployee.email,
+          });
 
-        // Create user account with email as username
-        const userAccount = new UserAccount();
-        userAccount.employee_id = savedEmployee.employee_id;
-        userAccount.username = signupDto.email;
-        userAccount.password = hashedPassword;
-        userAccount.password_changed = false;
-        
-        await manager.save(userAccount);
-        console.log('✅ User account created:', {
-          user_id: userAccount.user_id,
-          username: userAccount.username,
-          password_changed: userAccount.password_changed,
-        });
+          // Hash password
+          const hashedPassword = await bcrypt.hash(
+            temporaryPassword,
+            SecurityConfig.password.saltRounds,
+          );
+          console.log('✅ Password hashed');
+
+          // Create user account with email as username
+          const userAccount = new UserAccount();
+          userAccount.employee_id = savedEmployee.employee_id;
+          userAccount.username = signupDto.email;
+          userAccount.password = hashedPassword;
+          userAccount.password_changed = false;
+          
+          console.log('💾 Saving user account with data:', {
+            employee_id: userAccount.employee_id,
+            username: userAccount.username,
+          });
+
+          await manager.save(UserAccount, userAccount);
+          console.log('✅ User account created:', {
+            username: userAccount.username,
+            password_changed: userAccount.password_changed,
+          });
+        } catch (txError) {
+          console.error('❌ Transaction error:', {
+            message: txError.message,
+            code: txError.code,
+            detail: txError.detail,
+            stack: txError.stack,
+          });
+          throw txError;
+        }
       });
 
       console.log('✅ Signup completed successfully');
@@ -269,7 +287,12 @@ export class AuthService {
         email: signupDto.email,
       };
     } catch (error) {
-      console.error('❌ Signup error:', error);
+      console.error('❌ Signup error:', {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        fullError: error,
+      });
       throw error;
     }
   }
