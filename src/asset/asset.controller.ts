@@ -54,37 +54,37 @@ export class AssetController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get assets (filtered by department for employees)' })
+  @ApiOperation({ summary: 'Get assets (filtered by department for employees and supervisors)' })
   @ApiResponse({
     status: 200,
     description:
-      'Returns all assets for admin/supervisor/IT, or department assets for employees',
+      'Returns all assets for admin/IT, or department assets for employees/supervisors',
   })
   findAll(@CurrentUser() user: any) {
-    // If employee role, return only assets from their department
-    if (user.role === 'employee' && user.departmentId) {
+    // If employee or supervisor role, return only assets from their department
+    if ((user.role === 'employee' || user.role === 'supervisor') && user.departmentId) {
       return this.assetService.findByDepartment(user.departmentId);
     }
-    // For admin, supervisor, IT - return all assets
+    // For admin, IT - return all assets
     return this.assetService.findAll();
   }
 
   @Get('search')
   @ApiOperation({
     summary:
-      'Search assets by tag, category, model, or serial number (filtered by department for employees)',
+      'Search assets by tag, category, model, or serial number (filtered by department for employees and supervisors)',
   })
   @ApiResponse({
     status: 200,
     description: 'Returns matching assets',
   })
   search(@Query('q') query: string, @CurrentUser() user: any) {
-    // If employee role, search only within their department
-    if (user.role === 'employee' && user.departmentId) {
+    // If employee or supervisor role, search only within their department
+    if ((user.role === 'employee' || user.role === 'supervisor') && user.departmentId) {
       return this.assetService.searchByDepartment(query, user.departmentId);
     }
 
-    // For admin, supervisor, IT - search all assets
+    // For admin, IT - search all assets
     return this.assetService.search(query);
   }
 
