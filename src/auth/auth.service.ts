@@ -66,6 +66,7 @@ export class AuthService {
       user: {
         user_id: user.user_id,
         username: user.username,
+        password_changed: user.password_changed,
         employee: {
           employee_id: user.employee.employee_id,
           first_name: user.employee.first_name,
@@ -134,6 +135,7 @@ export class AuthService {
       SecurityConfig.password.saltRounds,
     );
     user.password = hashedPassword;
+    user.password_changed = true;  // Mark password as changed
     await this.userAccountRepository.save(user);
 
     return { message: 'Password changed successfully' };
@@ -172,7 +174,11 @@ export class AuthService {
     return await bcrypt.hash(password, SecurityConfig.password.saltRounds);
   }
 
-  async signup(signupDto: SignupDto): Promise<{ message: string }> {
+  async signup(signupDto: SignupDto): Promise<{ 
+    message: string;
+    temporaryPassword: string;
+    email: string;
+  }> {
     // Check if email already exists
     const existingEmail = await this.employeeRepository.findOne({
       where: { email: signupDto.email },
@@ -195,14 +201,8 @@ export class AuthService {
       );
     }
 
-    // Validate password strength
-    const validation = PasswordValidator.validate(signupDto.password);
-    if (!validation.valid) {
-      throw new BadRequestException({
-        message: 'Password does not meet security requirements',
-        errors: validation.errors,
-      });
-    }
+    // Generate random 6-digit password
+    const temporaryPassword = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Use transaction to create both employee and user account
     await this.dataSource.transaction(async (manager) => {
@@ -223,7 +223,7 @@ export class AuthService {
 
       // Hash password
       const hashedPassword = await bcrypt.hash(
-        signupDto.password,
+        temporaryPassword,
         SecurityConfig.password.saltRounds,
       );
 
@@ -237,8 +237,9 @@ export class AuthService {
     });
 
     return {
-      message:
-        'Registration successful! Your account is pending admin verification.',
+      message: 'Registration successful! Account created with temporary password. Please change password on first login.',
+      temporaryPassword: temporaryPassword,
+      email: signupDto.email,
     };
   }
 }

@@ -87,12 +87,4 @@ export class SignupDto {
   @IsString()
   @IsOptional()
   contact_number?: string;
-
-  @ApiProperty({
-    description: 'Password for the account',
-    example: 'StrongP@ssw0rd',
-  })
-  @IsString()
-  @IsNotEmpty()
-  password: string;
 }
