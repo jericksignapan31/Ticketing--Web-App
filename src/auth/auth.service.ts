@@ -220,26 +220,30 @@ export class AuthService {
         console.log('📦 Starting transaction...');
         
         try {
-          // Create employee with employment_status: false (inactive)
-          const employee = new Employee();
-          employee.branch_id = signupDto.branch_id;
-          employee.department_id = signupDto.department_id;
-          employee.first_name = signupDto.first_name;
-          employee.last_name = signupDto.last_name;
-          employee.middle_name = signupDto.middle_name;
-          employee.email = signupDto.email;
-          employee.role = signupDto.role || UserRole.EMPLOYEE;
-          employee.position = signupDto.position;
-          employee.contact_number = signupDto.contact_number;
-          employee.employment_status = false; // Inactive until admin verifies
+          // Get repositories for transaction
+          const employeeRepo = manager.getRepository(Employee);
+          const userAccountRepo = manager.getRepository(UserAccount);
+          
+          // Create employee - let TypeORM generate UUID
+          const employee = employeeRepo.create({
+            first_name: signupDto.first_name,
+            last_name: signupDto.last_name,
+            middle_name: signupDto.middle_name,
+            email: signupDto.email,
+            role: signupDto.role || UserRole.EMPLOYEE,
+            position: signupDto.position,
+            contact_number: signupDto.contact_number,
+            employment_status: false, // Inactive until admin verifies
+            branch_id: signupDto.branch_id,
+            department_id: signupDto.department_id,
+          });
           
           console.log('💾 Saving employee with data:', {
             email: employee.email,
-            branch_id: employee.branch_id,
-            department_id: employee.department_id,
+            first_name: employee.first_name,
           });
 
-          const savedEmployee = await manager.save(employee);
+          const savedEmployee = await employeeRepo.save(employee);
           console.log('✅ Employee created:', {
             employee_id: savedEmployee.employee_id,
             email: savedEmployee.email,
@@ -252,19 +256,20 @@ export class AuthService {
           );
           console.log('✅ Password hashed');
 
-          // Create user account with email as username
-          const userAccount = new UserAccount();
-          userAccount.employee_id = savedEmployee.employee_id;
-          userAccount.username = signupDto.email;
-          userAccount.password = hashedPassword;
-          userAccount.password_changed = false;
+          // Create user account
+          const userAccount = userAccountRepo.create({
+            employee_id: savedEmployee.employee_id,
+            username: signupDto.email,
+            password: hashedPassword,
+            password_changed: false,
+          });
           
           console.log('💾 Saving user account with data:', {
             employee_id: userAccount.employee_id,
             username: userAccount.username,
           });
 
-          await manager.save(userAccount);
+          await userAccountRepo.save(userAccount);
           console.log('✅ User account created:', {
             username: userAccount.username,
             password_changed: userAccount.password_changed,
