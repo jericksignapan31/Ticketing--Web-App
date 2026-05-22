@@ -239,7 +239,7 @@ export class AuthService {
             department_id: employee.department_id,
           });
 
-          const savedEmployee = await manager.save(Employee, employee);
+          const savedEmployee = await manager.save(employee);
           console.log('✅ Employee created:', {
             employee_id: savedEmployee.employee_id,
             email: savedEmployee.email,
@@ -264,7 +264,7 @@ export class AuthService {
             username: userAccount.username,
           });
 
-          await manager.save(UserAccount, userAccount);
+          await manager.save(userAccount);
           console.log('✅ User account created:', {
             username: userAccount.username,
             password_changed: userAccount.password_changed,
@@ -293,6 +293,16 @@ export class AuthService {
         detail: error.detail,
         fullError: error,
       });
+      
+      // If it's a database error, provide more details
+      if (error.code) {
+        throw new BadRequestException({
+          message: `Database error: ${error.message}`,
+          code: error.code,
+          detail: error.detail,
+        });
+      }
+      
       throw error;
     }
   }
