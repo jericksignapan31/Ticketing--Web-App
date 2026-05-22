@@ -179,68 +179,96 @@ export class AuthService {
     temporaryPassword: string;
     email: string;
   }> {
-    // Check if email already exists
-    const existingEmail = await this.employeeRepository.findOne({
-      where: { email: signupDto.email },
-    });
-
-    if (existingEmail) {
-      throw new ConflictException(
-        `Email ${signupDto.email} is already registered`,
-      );
-    }
-
-    // Check if username (email) already exists in user_account
-    const existingUsername = await this.userAccountRepository.findOne({
-      where: { username: signupDto.email },
-    });
-
-    if (existingUsername) {
-      throw new ConflictException(
-        `Username ${signupDto.email} already exists`,
-      );
-    }
-
-    // Generate random 6-digit password
-    const temporaryPassword = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Use transaction to create both employee and user account
-    await this.dataSource.transaction(async (manager) => {
-      // Create employee with employment_status: false (inactive)
-      const employee = manager.create(Employee, {
+    try {
+      console.log('📝 Signup request received:', {
+        email: signupDto.email,
+        first_name: signupDto.first_name,
         branch_id: signupDto.branch_id,
         department_id: signupDto.department_id,
-        first_name: signupDto.first_name,
-        last_name: signupDto.last_name,
-        middle_name: signupDto.middle_name,
+      });
+
+      // Check if email already exists
+      const existingEmail = await this.employeeRepository.findOne({
+        where: { email: signupDto.email },
+      });
+
+      if (existingEmail) {
+        console.warn('⚠️ Email already exists:', signupDto.email);
+        throw new ConflictException(
+          `Email ${signupDto.email} is already registered`,
+        );
+      }
+
+      // Check if username (email) already exists in user_account
+      const existingUsername = await this.userAccountRepository.findOne({
+        where: { username: signupDto.email },
+      });
+
+      if (existingUsername) {
+        console.warn('⚠️ Username already exists:', signupDto.email);
+        throw new ConflictException(
+          `Username ${signupDto.email} already exists`,
+        );
+      }
+
+      // Generate random 6-digit password
+      const temporaryPassword = Math.floor(100000 + Math.random() * 900000).toString();
+      console.log('🔐 Generated temporary password:', temporaryPassword);
+
+      // Use transaction to create both employee and user account
+      await this.dataSource.transaction(async (manager) => {
+        console.log('📦 Starting transaction...');
+        
+        // Create employee with employment_status: false (inactive)
+        const employee = manager.create(Employee, {
+          branch_id: signupDto.branch_id,
+          department_id: signupDto.department_id,
+          first_name: signupDto.first_name,
+          last_name: signupDto.last_name,
+          middle_name: signupDto.middle_name,
+          email: signupDto.email,
+          role: signupDto.role || UserRole.EMPLOYEE,
+          position: signupDto.position,
+          contact_number: signupDto.contact_number,
+          employment_status: false, // Inactive until admin verifies
+        });
+        const savedEmployee = await manager.save(employee);
+        console.log('✅ Employee created:', {
+          employee_id: savedEmployee.employee_id,
+          email: savedEmployee.email,
+        });
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(
+          temporaryPassword,
+          SecurityConfig.password.saltRounds,
+        );
+        console.log('✅ Password hashed');
+
+        // Create user account with email as username
+        const userAccount = manager.create(UserAccount, {
+          employee_id: savedEmployee.employee_id,
+          username: signupDto.email, // Use email as username
+          password: hashedPassword,
+          password_changed: false, // Explicitly set - user must change temp password on first login
+        });
+        await manager.save(userAccount);
+        console.log('✅ User account created:', {
+          user_id: userAccount.user_id,
+          username: userAccount.username,
+          password_changed: userAccount.password_changed,
+        });
+      });
+
+      console.log('✅ Signup completed successfully');
+      return {
+        message: 'Registration successful! Account created with temporary password. Please change password on first login.',
+        temporaryPassword: temporaryPassword,
         email: signupDto.email,
-        role: signupDto.role || UserRole.EMPLOYEE,
-        position: signupDto.position,
-        contact_number: signupDto.contact_number,
-        employment_status: false, // Inactive until admin verifies
-      });
-      const savedEmployee = await manager.save(employee);
-
-      // Hash password
-      const hashedPassword = await bcrypt.hash(
-        temporaryPassword,
-        SecurityConfig.password.saltRounds,
-      );
-
-      // Create user account with email as username
-      const userAccount = manager.create(UserAccount, {
-        employee_id: savedEmployee.employee_id,
-        username: signupDto.email, // Use email as username
-        password: hashedPassword,
-        password_changed: false, // Explicitly set - user must change temp password on first login
-      });
-      await manager.save(userAccount);
-    });
-
-    return {
-      message: 'Registration successful! Account created with temporary password. Please change password on first login.',
-      temporaryPassword: temporaryPassword,
-      email: signupDto.email,
-    };
+      };
+    } catch (error) {
+      console.error('❌ Signup error:', error);
+      throw error;
+    }
   }
 }
