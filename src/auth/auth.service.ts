@@ -31,6 +31,8 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
 
+    console.log('🔐 Login attempt for username:', username);
+
     // Find user by username (which is now email) and include employee with branch relation
     const user = await this.userAccountRepository.findOne({
       where: { username },
@@ -38,19 +40,39 @@ export class AuthService {
     });
 
     if (!user) {
+      console.error('❌ User not found:', username);
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    console.log('✅ User found:', {
+      user_id: user.user_id,
+      username: user.username,
+      password_changed: user.password_changed,
+    });
 
     // Check if employee account is active
     if (!user.employee || !user.employee.employment_status) {
+      console.error('❌ Account is not active:', username);
       throw new UnauthorizedException('Account is not active');
     }
 
+    console.log('✅ Account is active');
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('🔍 Password comparison result:', {
+      username: user.username,
+      isPasswordValid: isPasswordValid,
+      providedPasswordLength: password.length,
+      storedPasswordHash: user.password.substring(0, 20) + '...',
+    });
+
     if (!isPasswordValid) {
+      console.error('❌ Invalid password for user:', username);
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    console.log('✅ Password is valid');
 
     // Generate JWT token with branch_id
     const payload = {
@@ -60,6 +82,8 @@ export class AuthService {
       role: user.employee?.role || UserRole.EMPLOYEE,
       branchId: user.employee?.branch_id || null,
     };
+
+    console.log('✅ JWT token generated for user:', username);
 
     return {
       access_token: this.jwtService.sign(payload),
@@ -94,14 +118,19 @@ export class AuthService {
   ): Promise<{ message: string }> {
     const { currentPassword, newPassword } = changePasswordDto;
 
+    console.log('🔐 Change password request for user:', userId);
+
     // Find user
     const user = await this.userAccountRepository.findOne({
       where: { user_id: userId },
     });
 
     if (!user) {
+      console.error('❌ User not found:', userId);
       throw new UnauthorizedException('User not found');
     }
+
+    console.log('📝 Found user:', user.username);
 
     // Verify current password
     const isPasswordValid = await bcrypt.compare(
@@ -109,34 +138,55 @@ export class AuthService {
       user.password,
     );
     if (!isPasswordValid) {
+      console.error('❌ Current password is incorrect for user:', user.username);
       throw new UnauthorizedException('Current password is incorrect');
     }
+
+    console.log('✅ Current password verified');
 
     // Validate new password strength
     const validation = PasswordValidator.validate(newPassword);
     if (!validation.valid) {
+      console.error('❌ New password does not meet requirements:', validation.errors);
       throw new BadRequestException({
         message: 'Password does not meet security requirements',
         errors: validation.errors,
       });
     }
 
+    console.log('✅ New password meets security requirements');
+
     // Check if new password is same as current password
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
     if (isSamePassword) {
+      console.error('❌ New password is same as current password');
       throw new BadRequestException(
         'New password must be different from current password',
       );
     }
+
+    console.log('✅ New password is different from current password');
 
     // Hash and save new password
     const hashedPassword = await bcrypt.hash(
       newPassword,
       SecurityConfig.password.saltRounds,
     );
+
+    console.log('✅ New password hashed');
+
     user.password = hashedPassword;
     user.password_changed = true;  // Mark password as changed
-    await this.userAccountRepository.save(user);
+
+    console.log('💾 Saving updated user to database...');
+
+    const savedUser = await this.userAccountRepository.save(user);
+
+    console.log('✅ User password changed successfully:', {
+      user_id: savedUser.user_id,
+      username: savedUser.username,
+      password_changed: savedUser.password_changed,
+    });
 
     return { message: 'Password changed successfully' };
   }
