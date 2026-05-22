@@ -38,6 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       employee_id: user.employee_id,
       role: user.employee.role,
       branchId: user.employee.branch_id,
+      departmentId: user.employee.department_id,
     };
   }
 }

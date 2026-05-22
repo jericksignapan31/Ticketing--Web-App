@@ -169,6 +169,22 @@ export class AssetService {
     });
   }
 
+  async searchByDepartment(query: string, department_id: string): Promise<Asset[]> {
+    // Search assets assigned to employees in the same department
+    return await this.assetRepository
+      .createQueryBuilder('asset')
+      .leftJoinAndSelect('asset.brand', 'brand')
+      .leftJoinAndSelect('asset.branch', 'branch')
+      .leftJoinAndSelect('asset.assignedEmployee', 'employee')
+      .where('employee.department_id = :department_id', { department_id })
+      .andWhere(
+        '(asset.asset_tag ILIKE :query OR asset.category ILIKE :query OR asset.model ILIKE :query OR asset.serial_number ILIKE :query)',
+        { query: `%${query}%` },
+      )
+      .orderBy('asset.created_at', 'DESC')
+      .getMany();
+  }
+
   async searchByBranch(query: string, branch_id: string): Promise<Asset[]> {
     return await this.assetRepository.find({
       where: [
@@ -197,14 +213,26 @@ export class AssetService {
       );
     }
 
-    if (!employee.branch_id) {
+    if (!employee.department_id) {
       throw new BadRequestException(
-        `Employee '${employee.first_name} ${employee.last_name}' is not assigned to any branch`,
+        `Employee '${employee.first_name} ${employee.last_name}' is not assigned to any department`,
       );
     }
 
-    // Search within employee's branch
-    return this.searchByBranch(query, employee.branch_id);
+    // Search within employee's department
+    return this.searchByDepartment(query, employee.department_id);
+  }
+
+  async findByDepartment(department_id: string): Promise<Asset[]> {
+    // Find all assets assigned to employees in the same department
+    return await this.assetRepository
+      .createQueryBuilder('asset')
+      .leftJoinAndSelect('asset.brand', 'brand')
+      .leftJoinAndSelect('asset.branch', 'branch')
+      .leftJoinAndSelect('asset.assignedEmployee', 'employee')
+      .where('employee.department_id = :department_id', { department_id })
+      .orderBy('asset.created_at', 'DESC')
+      .getMany();
   }
 
   async findByBranch(branch_id: string): Promise<Asset[]> {
