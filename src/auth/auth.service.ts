@@ -220,22 +220,24 @@ export class AuthService {
         console.log('📦 Starting transaction...');
         
         // Create employee with employment_status: false (inactive)
-        const employee = manager.create(Employee, {
-          branch_id: signupDto.branch_id,
-          department_id: signupDto.department_id,
-          first_name: signupDto.first_name,
-          last_name: signupDto.last_name,
-          middle_name: signupDto.middle_name,
-          email: signupDto.email,
-          role: signupDto.role || UserRole.EMPLOYEE,
-          position: signupDto.position,
-          contact_number: signupDto.contact_number,
-          employment_status: false, // Inactive until admin verifies
-        });
+        const employee = new Employee();
+        employee.branch_id = signupDto.branch_id;
+        employee.department_id = signupDto.department_id;
+        employee.first_name = signupDto.first_name;
+        employee.last_name = signupDto.last_name;
+        employee.middle_name = signupDto.middle_name;
+        employee.email = signupDto.email;
+        employee.role = signupDto.role || UserRole.EMPLOYEE;
+        employee.position = signupDto.position;
+        employee.contact_number = signupDto.contact_number;
+        employee.employment_status = false; // Inactive until admin verifies
+        
         const savedEmployee = await manager.save(employee);
         console.log('✅ Employee created:', {
           employee_id: savedEmployee.employee_id,
           email: savedEmployee.email,
+          branch_id: savedEmployee.branch_id,
+          department_id: savedEmployee.department_id,
         });
 
         // Hash password
@@ -246,12 +248,12 @@ export class AuthService {
         console.log('✅ Password hashed');
 
         // Create user account with email as username
-        const userAccount = manager.create(UserAccount, {
-          employee_id: savedEmployee.employee_id,
-          username: signupDto.email, // Use email as username
-          password: hashedPassword,
-          password_changed: false, // Explicitly set - user must change temp password on first login
-        });
+        const userAccount = new UserAccount();
+        userAccount.employee_id = savedEmployee.employee_id;
+        userAccount.username = signupDto.email;
+        userAccount.password = hashedPassword;
+        userAccount.password_changed = false;
+        
         await manager.save(userAccount);
         console.log('✅ User account created:', {
           user_id: userAccount.user_id,
