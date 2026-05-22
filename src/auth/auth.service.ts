@@ -232,6 +232,7 @@ export class AuthService {
         employee_id: savedEmployee.employee_id,
         username: signupDto.email, // Use email as username
         password: hashedPassword,
+        password_changed: false, // Explicitly set - user must change temp password on first login
       });
       await manager.save(userAccount);
     });
