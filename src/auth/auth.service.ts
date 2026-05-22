@@ -31,7 +31,7 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
 
-    // Find user by username and include employee with branch relation
+    // Find user by username (which is now email) and include employee with branch relation
     const user = await this.userAccountRepository.findOne({
       where: { username },
       relations: ['employee', 'employee.branch'],
@@ -173,17 +173,6 @@ export class AuthService {
   }
 
   async signup(signupDto: SignupDto): Promise<{ message: string }> {
-    // Check if employee_id already exists
-    const existingEmployee = await this.employeeRepository.findOne({
-      where: { employee_id: signupDto.employee_id },
-    });
-
-    if (existingEmployee) {
-      throw new ConflictException(
-        `Employee with ID ${signupDto.employee_id} already exists`,
-      );
-    }
-
     // Check if email already exists
     const existingEmail = await this.employeeRepository.findOne({
       where: { email: signupDto.email },
@@ -195,14 +184,14 @@ export class AuthService {
       );
     }
 
-    // Check if username already exists
+    // Check if username (email) already exists in user_account
     const existingUsername = await this.userAccountRepository.findOne({
-      where: { username: signupDto.employee_id },
+      where: { username: signupDto.email },
     });
 
     if (existingUsername) {
       throw new ConflictException(
-        `Username ${signupDto.employee_id} already exists`,
+        `Username ${signupDto.email} already exists`,
       );
     }
 
@@ -219,7 +208,6 @@ export class AuthService {
     await this.dataSource.transaction(async (manager) => {
       // Create employee with employment_status: false (inactive)
       const employee = manager.create(Employee, {
-        employee_id: signupDto.employee_id,
         branch_id: signupDto.branch_id,
         department_id: signupDto.department_id,
         first_name: signupDto.first_name,
@@ -231,7 +219,7 @@ export class AuthService {
         contact_number: signupDto.contact_number,
         employment_status: false, // Inactive until admin verifies
       });
-      await manager.save(employee);
+      const savedEmployee = await manager.save(employee);
 
       // Hash password
       const hashedPassword = await bcrypt.hash(
@@ -239,10 +227,10 @@ export class AuthService {
         SecurityConfig.password.saltRounds,
       );
 
-      // Create user account with account linked to employee status
+      // Create user account with email as username
       const userAccount = manager.create(UserAccount, {
-        employee_id: signupDto.employee_id,
-        username: signupDto.employee_id,
+        employee_id: savedEmployee.employee_id,
+        username: signupDto.email, // Use email as username
         password: hashedPassword,
       });
       await manager.save(userAccount);

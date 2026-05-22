@@ -5,22 +5,13 @@ import {
   IsNotEmpty,
   IsEnum,
   IsOptional,
-  IsBoolean,
 } from 'class-validator';
 import { UserRole } from '../../common/enums/user-role.enum';
 
 export class SignupDto {
   @ApiProperty({
-    description: 'Employee ID',
-    example: 'EMP002',
-  })
-  @IsString()
-  @IsNotEmpty()
-  employee_id: string;
-
-  @ApiProperty({
     description: 'Branch ID',
-    example: 'BR001',
+    example: 'br-uuid-here',
     required: false,
   })
   @IsString()
@@ -29,7 +20,7 @@ export class SignupDto {
 
   @ApiProperty({
     description: 'Department ID',
-    example: 'DEPT001',
+    example: 'dept-uuid-here',
     required: false,
   })
   @IsString()
@@ -62,7 +53,7 @@ export class SignupDto {
   middle_name?: string;
 
   @ApiProperty({
-    description: 'Email address',
+    description: 'Email address (used as username)',
     example: 'john.doe@example.com',
   })
   @IsEmail()

@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   Column,
   OneToOne,
   ManyToOne,
@@ -15,7 +15,7 @@ import { UserRole } from '../common/enums/user-role.enum';
 
 @Entity('employee')
 export class Employee {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn('uuid')
   employee_id!: string;
 
   @Column({ nullable: true })

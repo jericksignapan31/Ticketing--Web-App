@@ -15,42 +15,41 @@ ON CONFLICT DO NOTHING;
 INSERT INTO "employee" (
     first_name, 
     last_name, 
-    email, 
-    phone_number, 
-    position, 
+    email,
+    position,
+    role,
     branch_id, 
     department_id,
-    hire_date,
-    is_active
+    employment_status
 )
 VALUES (
     'Admin',
     'User',
     'admin@ithelp.com',
-    '+63-999-999-9999',
     'System Administrator',
+    'admin',
     (SELECT branch_id FROM "branch" WHERE branch_name = 'Main Office' LIMIT 1),
     (SELECT department_id FROM "department" WHERE department_name = 'IT Department' LIMIT 1),
-    CURRENT_DATE,
     true
 )
 ON CONFLICT (email) DO NOTHING;
 
 -- 4. Create admin user account
 -- Password: admin123 (bcrypt hash)
+-- Username is now email-based
 INSERT INTO "user_account" (
     employee_id,
     username,
-    password_hash,
-    role,
-    is_active
+    password,
+    created_at,
+    updated_at
 )
 VALUES (
     (SELECT employee_id FROM "employee" WHERE email = 'admin@ithelp.com' LIMIT 1),
-    'admin',
+    'admin@ithelp.com',
     '$2b$10$rQW5Y5Y5Y5Y5Y5Y5Y5Y5Y.5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5Y5',  -- This will be replaced by the app
-    'admin',
-    true
+    NOW(),
+    NOW()
 )
 ON CONFLICT (username) DO NOTHING;
 
