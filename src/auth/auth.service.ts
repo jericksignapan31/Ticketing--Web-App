@@ -74,13 +74,14 @@ export class AuthService {
 
     console.log('✅ Password is valid');
 
-    // Generate JWT token with branch_id
+    // Generate JWT token with branch_id and department_id
     const payload = {
       sub: user.user_id,
       username: user.username,
       employeeId: user.employee_id,
       role: user.employee?.role || UserRole.EMPLOYEE,
       branchId: user.employee?.branch_id || null,
+      departmentId: user.employee?.department_id || null,
     };
 
     console.log('✅ JWT token generated for user:', username);
