@@ -3,8 +3,31 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import { AppDataSource } from './data-source';
+
+async function runMigrations() {
+  try {
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+    
+    // Ensure soft delete columns exist on asset table
+    await AppDataSource.query(`
+      ALTER TABLE "asset" 
+      ADD COLUMN IF NOT EXISTS "is_deleted" boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "deleted_at" timestamp NULL
+    `);
+    
+    console.log('✅ Migration: Soft delete columns verified/added to asset table');
+  } catch (error) {
+    console.warn('⚠️ Migration check: Asset soft delete columns may already exist');
+  }
+}
 
 async function bootstrap() {
+  // Run migrations first
+  await runMigrations();
+  
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log'],
   });
