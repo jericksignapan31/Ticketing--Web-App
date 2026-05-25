@@ -189,7 +189,7 @@ export class AssetService {
       .innerJoinAndSelect('asset.assignedEmployee', 'employee')
       .leftJoinAndSelect('asset.brand', 'brand')
       .leftJoinAndSelect('asset.branch', 'branch')
-      .where('employee.department_id = :department_id', { department_id })
+      .where('employee.department_id = CAST(:department_id AS UUID)', { department_id })
       .andWhere(
         '(asset.asset_tag ILIKE :query OR asset.category ILIKE :query OR asset.model ILIKE :query OR asset.serial_number ILIKE :query)',
         { query: `%${query}%` },
@@ -247,7 +247,7 @@ export class AssetService {
         .innerJoinAndSelect('asset.assignedEmployee', 'employee')
         .leftJoinAndSelect('asset.brand', 'brand')
         .leftJoinAndSelect('asset.branch', 'branch')
-        .where('employee.department_id = :department_id', { department_id })
+        .where('employee.department_id = CAST(:department_id AS UUID)', { department_id })
         .orderBy('asset.created_at', 'DESC');
       
       console.log('📝 Query SQL:', query.getSql());
