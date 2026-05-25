@@ -61,6 +61,13 @@ export class Asset {
   @Column({ length: 50, nullable: true })
   anydesk_id?: string;
 
+  // Soft delete support
+  @Column({ type: 'boolean', default: false })
+  is_deleted!: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deleted_at?: Date;
+
   @ManyToOne(() => Brand)
   @JoinColumn({ name: 'brand_id' })
   brand?: Brand;
