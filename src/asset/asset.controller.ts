@@ -207,7 +207,15 @@ export class AssetController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete an asset' })
-  remove(@Param('id') id: string) {
-    return this.assetService.remove(id);
+  async remove(@Param('id') id: string) {
+    try {
+      console.log('🗑️ Deleting asset:', id);
+      const result = await this.assetService.remove(id);
+      console.log('✅ Asset deleted successfully:', id);
+      return result;
+    } catch (error) {
+      console.error('❌ Error deleting asset:', error);
+      throw error;
+    }
   }
 }

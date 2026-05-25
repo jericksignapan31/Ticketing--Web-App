@@ -81,10 +81,10 @@ async function seed() {
 
     await dataSource.query(
       `
-      INSERT INTO "user_account" (employee_id, username, password)
+      INSERT INTO "user_account" (employee_id, email, password)
       VALUES ($1, $2, $3)
     `,
-      [employeeId, 'admin', hashedPassword],
+      [employeeId, 'admin@ithelp.com', hashedPassword],
     );
     console.log('✓ Admin user account created');
 
@@ -92,11 +92,10 @@ async function seed() {
     console.log('Default Admin Account Created:');
     console.log('=================================');
     console.log('Employee ID:', employeeId);
-    console.log('Username: admin');
+    console.log('Email: admin@ithelp.com');
     console.log('Password: admin123');
     console.log('Role: admin');
     console.log('Name: Admin User');
-    console.log('Email: admin@ithelp.com');
     console.log('Branch: Main Office');
     console.log('Department: IT Department');
     console.log('=================================\n');

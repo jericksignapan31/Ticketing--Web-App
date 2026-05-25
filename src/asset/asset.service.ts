@@ -222,8 +222,32 @@ export class AssetService {
   }
 
   async remove(asset_id: string): Promise<void> {
-    const asset = await this.findOne(asset_id);
-    await this.assetRepository.remove(asset);
+    try {
+      const asset = await this.findOne(asset_id);
+      console.log('🗑️ Found asset to delete:', asset_id);
+      
+      // Delete the asset
+      const result = await this.assetRepository.remove(asset);
+      console.log('✅ Asset removed successfully:', result);
+    } catch (error) {
+      const err = error as Error & { code?: string };
+      console.error('❌ Error removing asset:', {
+        asset_id,
+        message: err.message,
+        code: err.code,
+        detail: (error as any).detail,
+        stack: err.stack,
+      });
+      
+      // Check if it's a foreign key constraint error
+      if (err.code === '23503') {
+        throw new BadRequestException(
+          'Cannot delete asset: This asset is referenced by other records (e.g., repair logs, history records)',
+        );
+      }
+      
+      throw error;
+    }
   }
 
   async search(query: string): Promise<Asset[]> {
