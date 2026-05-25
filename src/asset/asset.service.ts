@@ -62,7 +62,8 @@ export class AssetService {
       const asset = this.assetRepository.create(createAssetDto);
       return await this.assetRepository.save(asset);
     } catch (error) {
-      console.error('Error creating asset:', error);
+      const err = error as Error & { code?: string };
+      console.error('Error creating asset:', err);
       if (
         error instanceof ConflictException ||
         error instanceof NotFoundException ||
@@ -71,7 +72,7 @@ export class AssetService {
         throw error;
       }
       throw new BadRequestException(
-        `Failed to create asset: ${error.message || 'Unknown error'}`,
+        `Failed to create asset: ${err.message || 'Unknown error'}`,
       );
     }
   }
@@ -86,10 +87,11 @@ export class AssetService {
       console.log('✅ Found all assets:', assets.length);
       return assets;
     } catch (error) {
+      const err = error as Error & { code?: string };
       console.error('❌ Error finding all assets:', {
-        message: error.message,
-        code: error.code,
-        stack: error.stack,
+        message: err.message,
+        code: err.code,
+        stack: err.stack,
       });
       throw error;
     }
@@ -258,14 +260,15 @@ export class AssetService {
       console.log('✅ Found assets:', assets.length);
       return assets;
     } catch (error) {
+      const err = error as Error & { code?: string; sqlState?: string; detail?: string; hint?: string };
       console.error('❌ Error finding assets by department:', {
         department_id,
-        message: error.message,
-        code: error.code,
-        sqlState: error.sqlState,
-        detail: error.detail,
-        hint: error.hint,
-        stack: error.stack,
+        message: err.message,
+        code: err.code,
+        sqlState: err.sqlState,
+        detail: err.detail,
+        hint: err.hint,
+        stack: err.stack,
       });
       throw error;
     }

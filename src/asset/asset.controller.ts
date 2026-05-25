@@ -78,9 +78,10 @@ export class AssetController {
       console.log('🌍 Returning all assets for admin/IT');
       return this.assetService.findAll();
     } catch (error) {
+      const err = error as Error;
       console.error('❌ Error in findAll:', {
-        message: error.message,
-        stack: error.stack,
+        message: err.message,
+        stack: err.stack,
       });
       throw error;
     }
@@ -180,10 +181,11 @@ export class AssetController {
         message: 'Asset history retrieved successfully',
       };
     } catch (error) {
-      if (error.status === 404) {
+      const err = error as any;
+      if (err.status === 404) {
         return {
           success: false,
-          error: error.message,
+          error: err.message,
           assetId: asset_id,
         };
       }
