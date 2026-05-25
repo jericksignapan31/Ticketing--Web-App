@@ -46,7 +46,7 @@ async function syncUserAccounts() {
 
       const userAccount = userAccountRepo.create({
         employee_id: employee.employee_id,
-        username: employee.employee_id,
+        email: employee.email,
         password: hashedPassword,
       });
 

@@ -16,7 +16,7 @@ export class UserAccountService {
       select: {
         user_id: true,
         employee_id: true,
-        username: true,
+        email: true,
         created_at: true,
         updated_at: true,
         // Note: password is excluded from select for security
@@ -34,7 +34,7 @@ export class UserAccountService {
       select: {
         user_id: true,
         employee_id: true,
-        username: true,
+        email: true,
         created_at: true,
         updated_at: true,
       },
@@ -54,7 +54,7 @@ export class UserAccountService {
       select: {
         user_id: true,
         employee_id: true,
-        username: true,
+        email: true,
         created_at: true,
         updated_at: true,
       },
@@ -69,14 +69,14 @@ export class UserAccountService {
     return userAccount;
   }
 
-  async findByUsername(username: string): Promise<UserAccount> {
+  async findByEmail(email: string): Promise<UserAccount> {
     const userAccount = await this.userAccountRepository.findOne({
-      where: { username },
+      where: { email },
       relations: ['employee', 'employee.branch', 'employee.department'],
       select: {
         user_id: true,
         employee_id: true,
-        username: true,
+        email: true,
         created_at: true,
         updated_at: true,
       },
@@ -84,7 +84,7 @@ export class UserAccountService {
 
     if (!userAccount) {
       throw new NotFoundException(
-        `User account with username ${username} not found`,
+        `User account with email ${email} not found`,
       );
     }
 
@@ -97,7 +97,7 @@ export class UserAccountService {
       select: {
         user_id: true,
         employee_id: true,
-        username: true,
+        email: true,
         password: true,
         created_at: true,
         updated_at: true,
@@ -110,12 +110,12 @@ export class UserAccountService {
     return userAccounts.map((account) => ({
       user_id: account.user_id,
       employee_id: account.employee_id,
-      username: account.username,
+      email: account.email,
       password: account.password,
       employee_name: account.employee
         ? `${account.employee.first_name} ${account.employee.last_name}`
         : 'N/A',
-      email: account.employee?.email || 'N/A',
+      email_address: account.employee?.email || 'N/A',
       role: account.employee?.role || 'N/A',
       account_status: account.employee?.employment_status
         ? 'Active'

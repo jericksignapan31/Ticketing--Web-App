@@ -79,7 +79,7 @@ export class AuthService {
     // Generate JWT token with branch_id and department_id
     const payload = {
       sub: user.user_id,
-      username: user.username,
+      username: user.employee?.email,
       employeeId: user.employee_id,
       role: user.employee?.role || UserRole.EMPLOYEE,
       branchId: user.employee?.branch_id || null,
@@ -92,7 +92,7 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
       user: {
         user_id: user.user_id,
-        username: user.username,
+        username: user.employee?.email,
         password_changed: user.password_changed,
         employee: {
           employee_id: user.employee.employee_id,
@@ -133,7 +133,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    console.log('📝 Found user:', user.username);
+    console.log('📝 Found user:', user.email);
 
     // Verify current password
     const isPasswordValid = await bcrypt.compare(
@@ -141,7 +141,7 @@ export class AuthService {
       user.password,
     );
     if (!isPasswordValid) {
-      console.error('❌ Current password is incorrect for user:', user.username);
+      console.error('❌ Current password is incorrect for user:', user.email);
       throw new UnauthorizedException('Current password is incorrect');
     }
 
@@ -187,7 +187,7 @@ export class AuthService {
 
     console.log('✅ User password changed successfully:', {
       user_id: savedUser.user_id,
-      username: savedUser.username,
+      email: savedUser.email,
       password_changed: savedUser.password_changed,
     });
 
@@ -206,7 +206,7 @@ export class AuthService {
 
     return {
       user_id: user.user_id,
-      username: user.username,
+      username: user.email,
       employee: {
         employee_id: user.employee!.employee_id,
         first_name: user.employee!.first_name,
@@ -252,15 +252,15 @@ export class AuthService {
         );
       }
 
-      // Check if username (email) already exists in user_account
-      const existingUsername = await this.userAccountRepository.findOne({
-        where: { username: signupDto.email },
+      // Check if email already exists in user_account
+      const existingUserAccount = await this.userAccountRepository.findOne({
+        where: { email: signupDto.email },
       });
 
-      if (existingUsername) {
-        console.warn('⚠️ Username already exists:', signupDto.email);
+      if (existingUserAccount) {
+        console.warn('⚠️ Email already exists in user_account:', signupDto.email);
         throw new ConflictException(
-          `Username ${signupDto.email} already exists`,
+          `Email ${signupDto.email} already has a user account`,
         );
       }
 
@@ -312,19 +312,19 @@ export class AuthService {
           // Create user account
           const userAccount = userAccountRepo.create({
             employee_id: savedEmployee.employee_id,
-            username: signupDto.email,
+            email: signupDto.email,
             password: hashedPassword,
             password_changed: false,
           });
           
           console.log('💾 Saving user account with data:', {
             employee_id: userAccount.employee_id,
-            username: userAccount.username,
+            email: userAccount.email,
           });
 
           await userAccountRepo.save(userAccount);
           console.log('✅ User account created:', {
-            username: userAccount.username,
+            email: userAccount.email,
             password_changed: userAccount.password_changed,
           });
         } catch (txError) {

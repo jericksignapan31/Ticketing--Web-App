@@ -93,7 +93,7 @@ export class UserAccountController {
     description: 'User account found',
   })
   @ApiResponse({ status: 404, description: 'User account not found' })
-  findByUsername(@Param('username') username: string) {
-    return this.userAccountService.findByUsername(username);
+  findByEmail(@Param('email') email: string) {
+    return this.userAccountService.findByEmail(email);
   }
 }

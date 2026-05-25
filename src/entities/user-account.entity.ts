@@ -18,7 +18,7 @@ export class UserAccount {
   employee_id!: string;
 
   @Column({ unique: true })
-  username!: string;
+  email!: string;
 
   @Column()
   password!: string;

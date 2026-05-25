@@ -53,18 +53,14 @@ export class EmployeeService {
       );
     }
 
-    // Generate username from first and last name
-    const username =
-      `${createEmployeeDto.first_name}.${createEmployeeDto.last_name}`.toLowerCase();
-
-    // Check if username already exists
-    const existingUsername = await this.userAccountRepository.findOne({
-      where: { username },
+    // Check if email already exists in user_account
+    const existingUserAccount = await this.userAccountRepository.findOne({
+      where: { email: createEmployeeDto.email },
     });
 
-    if (existingUsername) {
+    if (existingUserAccount) {
       throw new ConflictException(
-        `Username ${username} already exists`,
+        `Email ${createEmployeeDto.email} already has a user account`,
       );
     }
 
@@ -80,10 +76,10 @@ export class EmployeeService {
         SecurityConfig.password.saltRounds,
       );
 
-      // Create user account with generated username and hashed password
+      // Create user account with email and hashed password
       const userAccount = new UserAccount();
       userAccount.employee_id = savedEmployee.employee_id;
-      userAccount.username = username;
+      userAccount.email = savedEmployee.email;
       userAccount.password = hashedPassword;
       await manager.save(userAccount);
 

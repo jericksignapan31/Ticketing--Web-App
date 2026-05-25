@@ -54,7 +54,7 @@ export class AssetHistoryService {
         description: `Status changed from ${sh.previous_status || 'unknown'} to ${sh.new_status}`,
         previousValue: sh.previous_status,
         newValue: sh.new_status,
-        changedBy: sh.changedByUser?.username || 'Unknown',
+        changedBy: sh.changedByUser?.email || 'Unknown',
         changedByRole: 'ADMIN',
         timestamp: sh.created_at.toISOString(),
         details: {
@@ -82,7 +82,7 @@ export class AssetHistoryService {
         previousEmployee: ah.previousEmployee
           ? `${ah.previousEmployee.first_name} ${ah.previousEmployee.last_name}`
           : null,
-        changedBy: ah.assignedByUser?.username || 'Unknown',
+        changedBy: ah.assignedByUser?.email || 'Unknown',
         changedByRole: 'ADMIN',
         timestamp: ah.created_at.toISOString(),
         details: {
@@ -133,7 +133,7 @@ export class AssetHistoryService {
         toBranch: mh.toBranch?.branch_name,
         fromBranchId: mh.from_branch_id,
         toBranchId: mh.to_branch_id,
-        movedBy: mh.movedByUser?.username || 'Unknown',
+        movedBy: mh.movedByUser?.email || 'Unknown',
         changedByRole: 'ADMIN',
         timestamp: mh.created_at.toISOString(),
         details: {
