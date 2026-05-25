@@ -57,7 +57,10 @@ async function seed() {
     const deptId = deptResult[0].department_id;
     console.log('✓ Department created:', deptId);
 
-    // 3. Create admin employee with employee_id = 'EMP001'
+    // 3. Create admin employee with generated UUID
+    const { v4: uuidv4 } = require('uuid');
+    const employeeId = uuidv4();
+    
     await dataSource.query(
       `
       INSERT INTO "employee" (
@@ -65,13 +68,13 @@ async function seed() {
         branch_id, department_id, employment_status
       )
       VALUES (
-        'EMP001', 'Admin', 'User', 'admin@ithelp.com', '+63-999-999-9999',
-        'System Administrator', 'admin', $1, $2, true
+        $1, 'Admin', 'User', 'admin@ithelp.com', '+63-999-999-9999',
+        'System Administrator', 'admin', $2, $3, true
       )
     `,
-      [branchId, deptId],
+      [employeeId, branchId, deptId],
     );
-    console.log('✓ Admin employee created: EMP001');
+    console.log('✓ Admin employee created:', employeeId);
 
     // 4. Create admin user account with hashed password
     const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -79,17 +82,17 @@ async function seed() {
     await dataSource.query(
       `
       INSERT INTO "user_account" (employee_id, username, password)
-      VALUES ('EMP001', 'EMP001', $1)
+      VALUES ($1, $2, $3)
     `,
-      [hashedPassword],
+      [employeeId, 'admin', hashedPassword],
     );
     console.log('✓ Admin user account created');
 
     console.log('\n=================================');
     console.log('Default Admin Account Created:');
     console.log('=================================');
-    console.log('Employee ID: EMP001');
-    console.log('Username: EMP001');
+    console.log('Employee ID:', employeeId);
+    console.log('Username: admin');
     console.log('Password: admin123');
     console.log('Role: admin');
     console.log('Name: Admin User');
@@ -98,7 +101,42 @@ async function seed() {
     console.log('Department: IT Department');
     console.log('=================================\n');
 
-    console.log('✓ Database reset and seeding completed successfully!');
+    // 5. Create test assets
+    const brand = await dataSource.query(`
+      INSERT INTO "brand" (brand_name, description)
+      VALUES ('Dell', 'Dell Technologies')
+      RETURNING brand_id
+    `);
+    const brandId = brand[0].brand_id;
+    console.log('✓ Test brand created:', brandId);
+
+    // Create test assets
+    const assets: string[] = [];
+    for (let i = 1; i <= 3; i++) {
+      const result = await dataSource.query(`
+        INSERT INTO "asset" (
+          asset_tag, category, model, status, condition,
+          assigned_to, branch_id, brand_id, created_at, updated_at
+        )
+        VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, now(), now()
+        )
+        RETURNING asset_id
+      `, [
+        `ASSET-${String(i).padStart(3, '0')}`,
+        'Laptop',
+        'Dell XPS 13',
+        'available',
+        'good',
+        i === 1 ? employeeId : null,
+        branchId,
+        brandId
+      ]);
+      assets.push(result[0].asset_id);
+    }
+    console.log(`✓ Created ${assets.length} test assets:`, assets);
+
+    console.log('\n=================================');
   } catch (error) {
     console.error('✗ Seeding failed:', error);
   } finally {
