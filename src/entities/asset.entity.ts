@@ -19,10 +19,10 @@ export class Asset {
   @Column({ unique: true })
   asset_tag!: string;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column('uuid', { nullable: true })
   brand_id?: string;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column('uuid', { nullable: true })
   branch_id?: string;
 
   @Column()
@@ -40,7 +40,7 @@ export class Asset {
   @Column({ default: 'good', nullable: true, type: 'varchar', length: 20 })
   condition?: string;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ nullable: true })
   assigned_to?: string;
 
   @Column({ type: 'text', nullable: true })

@@ -18,10 +18,10 @@ export class Employee {
   @PrimaryGeneratedColumn('uuid')
   employee_id!: string;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column('uuid', { nullable: true })
   branch_id?: string;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column('uuid', { nullable: true })
   department_id?: string;
 
   @Column()

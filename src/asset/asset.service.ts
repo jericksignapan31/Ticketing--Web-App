@@ -8,6 +8,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Asset } from '../entities/asset.entity';
 import { Employee } from '../entities/employee.entity';
+import { Brand } from '../entities/brand.entity';
+import { Branch } from '../entities/branch.entity';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 
@@ -80,12 +82,66 @@ export class AssetService {
   async findAll(): Promise<Asset[]> {
     try {
       console.log('📋 Finding all assets');
-      const assets = await this.assetRepository.find({
-        relations: ['brand', 'branch', 'assignedEmployee'],
-        order: { created_at: 'DESC' },
+      // Use raw query to avoid TypeORM's automatic join issues with type mismatches
+      const assets = await this.assetRepository.query(`
+        SELECT 
+          a.asset_id, a.asset_tag, a.brand_id, a.branch_id, a.category, 
+          a.model, a.serial_number, a.status, a.condition, a.assigned_to, 
+          a.notes, a.specifications, a.ip_address, a.mac_address, a.hostname, 
+          a.anydesk_id, a.created_at, a.updated_at,
+          b.brand_id, b.brand_name, b.description, b.brand_image_url, b.status as brand_status, b.created_at as brand_created_at, b.updated_at as brand_updated_at,
+          br.branch_id, br.branch_name, br.location, br.contact_number, br.status as branch_status, br.created_at as branch_created_at, br.updated_at as branch_updated_at,
+          e.employee_id, e.branch_id as emp_branch_id, e.department_id, e.first_name, e.last_name, e.middle_name, e.email, e.role, e.position, e.contact_number as emp_contact, e.employment_status, e.created_at as emp_created_at, e.updated_at as emp_updated_at
+        FROM asset a
+        LEFT JOIN brand b ON b.brand_id = a.brand_id
+        LEFT JOIN branch br ON br.branch_id = a.branch_id
+        LEFT JOIN employee e ON e.employee_id::varchar = a.assigned_to
+        ORDER BY a.created_at DESC
+      `);
+      // Map the raw query results to Asset objects with relations
+      const result = assets.map(row => {
+        const asset = new Asset();
+        asset.asset_id = row.asset_id;
+        asset.asset_tag = row.asset_tag;
+        asset.brand_id = row.brand_id;
+        asset.branch_id = row.branch_id;
+        asset.category = row.category;
+        asset.model = row.model;
+        asset.serial_number = row.serial_number;
+        asset.status = row.status;
+        asset.condition = row.condition;
+        asset.assigned_to = row.assigned_to;
+        asset.notes = row.notes;
+        asset.specifications = row.specifications;
+        asset.ip_address = row.ip_address;
+        asset.mac_address = row.mac_address;
+        asset.hostname = row.hostname;
+        asset.anydesk_id = row.anydesk_id;
+        asset.created_at = row.created_at;
+        asset.updated_at = row.updated_at;
+        if (row.brand_name) {
+          asset.brand = new Brand();
+          asset.brand.brand_id = row.brand_id;
+          asset.brand.brand_name = row.brand_name;
+          asset.brand.description = row.description;
+        }
+        if (row.branch_name) {
+          asset.branch = new Branch();
+          asset.branch.branch_id = row.branch_id;
+          asset.branch.branch_name = row.branch_name;
+          asset.branch.location = row.location;
+        }
+        if (row.employee_id) {
+          asset.assignedEmployee = new Employee();
+          asset.assignedEmployee.employee_id = row.employee_id;
+          asset.assignedEmployee.first_name = row.first_name;
+          asset.assignedEmployee.last_name = row.last_name;
+          asset.assignedEmployee.email = row.email;
+        }
+        return asset;
       });
-      console.log('✅ Found all assets:', assets.length);
-      return assets;
+      console.log('✅ Found all assets:', result.length);
+      return result;
     } catch (error) {
       const err = error as Error & { code?: string };
       console.error('❌ Error finding all assets:', {
