@@ -240,20 +240,70 @@ export class AssetService {
   }
 
   async searchByDepartment(query: string, department_id: string): Promise<Asset[]> {
-    // Search assets assigned to employees in the same department
-    // Use INNER JOIN to only get assets with assigned employees
-    return await this.assetRepository
-      .createQueryBuilder('asset')
-      .innerJoinAndSelect('asset.assignedEmployee', 'employee')
-      .leftJoinAndSelect('asset.brand', 'brand')
-      .leftJoinAndSelect('asset.branch', 'branch')
-      .where('CAST(employee.department_id AS text) = :department_id', { department_id })
-      .andWhere(
-        '(asset.asset_tag ILIKE :query OR asset.category ILIKE :query OR asset.model ILIKE :query OR asset.serial_number ILIKE :query)',
-        { query: `%${query}%` },
-      )
-      .orderBy('asset.created_at', 'DESC')
-      .getMany();
+    // Search assets assigned to employees in the same department using raw SQL to avoid type mismatch
+    const assets = await this.assetRepository.query(
+      `
+      SELECT 
+        a.asset_id, a.asset_tag, a.brand_id, a.branch_id, a.category, 
+        a.model, a.serial_number, a.status, a.condition, a.assigned_to, 
+        a.notes, a.specifications, a.ip_address, a.mac_address, a.hostname, 
+        a.anydesk_id, a.created_at, a.updated_at,
+        b.brand_id, b.brand_name, b.description, b.brand_image_url, b.status as brand_status, b.created_at as brand_created_at, b.updated_at as brand_updated_at,
+        br.branch_id, br.branch_name, br.location, br.contact_number, br.status as branch_status, br.created_at as branch_created_at, br.updated_at as branch_updated_at,
+        e.employee_id, e.branch_id as emp_branch_id, e.department_id, e.first_name, e.last_name, e.middle_name, e.email, e.role, e.position, e.contact_number as emp_contact, e.employment_status, e.created_at as emp_created_at, e.updated_at as emp_updated_at
+      FROM asset a
+      INNER JOIN employee e ON e.employee_id::varchar = a.assigned_to
+      LEFT JOIN brand b ON b.brand_id = a.brand_id
+      LEFT JOIN branch br ON br.branch_id = a.branch_id
+      WHERE CAST(e.department_id AS text) = $1
+        AND (a.asset_tag ILIKE $2 OR a.category ILIKE $2 OR a.model ILIKE $2 OR a.serial_number ILIKE $2)
+      ORDER BY a.created_at DESC
+      `,
+      [department_id, `%${query}%`],
+    );
+
+    return assets.map(row => {
+      const asset = new Asset();
+      asset.asset_id = row.asset_id;
+      asset.asset_tag = row.asset_tag;
+      asset.brand_id = row.brand_id;
+      asset.branch_id = row.branch_id;
+      asset.category = row.category;
+      asset.model = row.model;
+      asset.serial_number = row.serial_number;
+      asset.status = row.status;
+      asset.condition = row.condition;
+      asset.assigned_to = row.assigned_to;
+      asset.notes = row.notes;
+      asset.specifications = row.specifications;
+      asset.ip_address = row.ip_address;
+      asset.mac_address = row.mac_address;
+      asset.hostname = row.hostname;
+      asset.anydesk_id = row.anydesk_id;
+      asset.created_at = row.created_at;
+      asset.updated_at = row.updated_at;
+      if (row.brand_name) {
+        asset.brand = new Brand();
+        asset.brand.brand_id = row.brand_id;
+        asset.brand.brand_name = row.brand_name;
+        asset.brand.description = row.description;
+      }
+      if (row.branch_name) {
+        asset.branch = new Branch();
+        asset.branch.branch_id = row.branch_id;
+        asset.branch.branch_name = row.branch_name;
+        asset.branch.location = row.location;
+      }
+      if (row.employee_id) {
+        asset.assignedEmployee = new Employee();
+        asset.assignedEmployee.employee_id = row.employee_id;
+        asset.assignedEmployee.first_name = row.first_name;
+        asset.assignedEmployee.last_name = row.last_name;
+        asset.assignedEmployee.email = row.email;
+        asset.assignedEmployee.department_id = row.department_id;
+      }
+      return asset;
+    });
   }
 
   async searchByBranch(query: string, branch_id: string): Promise<Asset[]> {
@@ -295,26 +345,75 @@ export class AssetService {
   }
 
   async findByDepartment(department_id: string): Promise<Asset[]> {
-    // Find all assets assigned to employees in the same department
-    // Use INNER JOIN to only get assets with assigned employees
+    // Find all assets assigned to employees in the same department using raw SQL to avoid type mismatch
     console.log('🔍 Finding assets by department:', department_id);
     
     try {
-      const query = this.assetRepository
-        .createQueryBuilder('asset')
-        .innerJoinAndSelect('asset.assignedEmployee', 'employee')
-        .leftJoinAndSelect('asset.brand', 'brand')
-        .leftJoinAndSelect('asset.branch', 'branch')
-        .where('CAST(employee.department_id AS text) = :department_id', { department_id })
-        .orderBy('asset.created_at', 'DESC');
+      const assets = await this.assetRepository.query(
+        `
+        SELECT 
+          a.asset_id, a.asset_tag, a.brand_id, a.branch_id, a.category, 
+          a.model, a.serial_number, a.status, a.condition, a.assigned_to, 
+          a.notes, a.specifications, a.ip_address, a.mac_address, a.hostname, 
+          a.anydesk_id, a.created_at, a.updated_at,
+          b.brand_id, b.brand_name, b.description, b.brand_image_url, b.status as brand_status, b.created_at as brand_created_at, b.updated_at as brand_updated_at,
+          br.branch_id, br.branch_name, br.location, br.contact_number, br.status as branch_status, br.created_at as branch_created_at, br.updated_at as branch_updated_at,
+          e.employee_id, e.branch_id as emp_branch_id, e.department_id, e.first_name, e.last_name, e.middle_name, e.email, e.role, e.position, e.contact_number as emp_contact, e.employment_status, e.created_at as emp_created_at, e.updated_at as emp_updated_at
+        FROM asset a
+        INNER JOIN employee e ON e.employee_id::varchar = a.assigned_to
+        LEFT JOIN brand b ON b.brand_id = a.brand_id
+        LEFT JOIN branch br ON br.branch_id = a.branch_id
+        WHERE CAST(e.department_id AS text) = $1
+        ORDER BY a.created_at DESC
+        `,
+        [department_id],
+      );
       
-      console.log('📝 Query SQL:', query.getSql());
-      console.log('📋 Query params:', { department_id });
-
-      const assets = await query.getMany();
+      const result = assets.map(row => {
+        const asset = new Asset();
+        asset.asset_id = row.asset_id;
+        asset.asset_tag = row.asset_tag;
+        asset.brand_id = row.brand_id;
+        asset.branch_id = row.branch_id;
+        asset.category = row.category;
+        asset.model = row.model;
+        asset.serial_number = row.serial_number;
+        asset.status = row.status;
+        asset.condition = row.condition;
+        asset.assigned_to = row.assigned_to;
+        asset.notes = row.notes;
+        asset.specifications = row.specifications;
+        asset.ip_address = row.ip_address;
+        asset.mac_address = row.mac_address;
+        asset.hostname = row.hostname;
+        asset.anydesk_id = row.anydesk_id;
+        asset.created_at = row.created_at;
+        asset.updated_at = row.updated_at;
+        if (row.brand_name) {
+          asset.brand = new Brand();
+          asset.brand.brand_id = row.brand_id;
+          asset.brand.brand_name = row.brand_name;
+          asset.brand.description = row.description;
+        }
+        if (row.branch_name) {
+          asset.branch = new Branch();
+          asset.branch.branch_id = row.branch_id;
+          asset.branch.branch_name = row.branch_name;
+          asset.branch.location = row.location;
+        }
+        if (row.employee_id) {
+          asset.assignedEmployee = new Employee();
+          asset.assignedEmployee.employee_id = row.employee_id;
+          asset.assignedEmployee.first_name = row.first_name;
+          asset.assignedEmployee.last_name = row.last_name;
+          asset.assignedEmployee.email = row.email;
+          asset.assignedEmployee.department_id = row.department_id;
+        }
+        return asset;
+      });
       
-      console.log('✅ Found assets:', assets.length);
-      return assets;
+      console.log('✅ Found assets:', result.length);
+      return result;
     } catch (error) {
       const err = error as Error & { code?: string; sqlState?: string; detail?: string; hint?: string };
       console.error('❌ Error finding assets by department:', {
