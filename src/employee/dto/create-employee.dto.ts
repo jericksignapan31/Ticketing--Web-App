@@ -10,18 +10,22 @@ import {
 import { UserRole } from '../../common/enums/user-role.enum';
 
 export class CreateEmployeeDto {
-  @ApiProperty({ example: 'EMP002', description: 'Employee ID' })
-  @IsNotEmpty()
+  @ApiProperty({
+    example: 'juan-dela-cruz',
+    description: 'Employee ID (auto-generated as UUID if not provided)',
+    required: false,
+  })
+  @IsOptional()
   @IsString()
-  employee_id: string;
+  employee_id?: string;
 
-  @ApiProperty({ example: 'BR001', description: 'Branch ID', required: false })
+  @ApiProperty({ example: 'branch-uuid', description: 'Branch ID', required: false })
   @IsOptional()
   @IsString()
   branch_id?: string;
 
   @ApiProperty({
-    example: 'DEPT001',
+    example: 'department-uuid',
     description: 'Department ID',
     required: false,
   })

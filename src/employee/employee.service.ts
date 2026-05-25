@@ -23,14 +23,22 @@ export class EmployeeService {
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto): Promise<Employee> {
+    // Auto-generate employee_id if not provided
+    let employeeId = createEmployeeDto.employee_id;
+    if (!employeeId) {
+      const { v4: uuidv4 } = require('uuid');
+      employeeId = uuidv4();
+      createEmployeeDto.employee_id = employeeId;
+    }
+
     // Check if employee_id already exists
     const existingEmployee = await this.employeeRepository.findOne({
-      where: { employee_id: createEmployeeDto.employee_id },
+      where: { employee_id: employeeId },
     });
 
     if (existingEmployee) {
       throw new ConflictException(
-        `Employee with ID ${createEmployeeDto.employee_id} already exists`,
+        `Employee with ID ${employeeId} already exists`,
       );
     }
 
@@ -45,14 +53,18 @@ export class EmployeeService {
       );
     }
 
+    // Generate username from first and last name
+    const username =
+      `${createEmployeeDto.first_name}.${createEmployeeDto.last_name}`.toLowerCase();
+
     // Check if username already exists
     const existingUsername = await this.userAccountRepository.findOne({
-      where: { username: createEmployeeDto.employee_id },
+      where: { username },
     });
 
     if (existingUsername) {
       throw new ConflictException(
-        `Username ${createEmployeeDto.employee_id} already exists`,
+        `Username ${username} already exists`,
       );
     }
 
@@ -64,16 +76,15 @@ export class EmployeeService {
 
       // Hash password (using employee_id as password)
       const hashedPassword = await bcrypt.hash(
-        createEmployeeDto.employee_id,
+        savedEmployee.employee_id,
         SecurityConfig.password.saltRounds,
       );
 
-      // Create user account with username and password both as employee_id
-      const userAccount = manager.create(UserAccount, {
-        employee_id: savedEmployee.employee_id,
-        username: savedEmployee.employee_id,
-        password: hashedPassword,
-      });
+      // Create user account with generated username and hashed password
+      const userAccount = new UserAccount();
+      userAccount.employee_id = savedEmployee.employee_id;
+      userAccount.username = username;
+      userAccount.password = hashedPassword;
       await manager.save(userAccount);
 
       return savedEmployee;
