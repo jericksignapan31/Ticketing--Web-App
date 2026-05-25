@@ -29,30 +29,32 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto) {
-    const { username, password } = loginDto;
+    const { email, password } = loginDto;
 
-    console.log('🔐 Login attempt for username:', username);
+    console.log('🔐 Login attempt for email:', email);
 
-    // Find user by username (which is now email) and include employee with branch relation
-    const user = await this.userAccountRepository.findOne({
-      where: { username },
-      relations: ['employee', 'employee.branch'],
-    });
+    // Find user by employee email and include employee with branch relation
+    const user = await this.userAccountRepository
+      .createQueryBuilder('ua')
+      .leftJoinAndSelect('ua.employee', 'emp')
+      .leftJoinAndSelect('emp.branch', 'branch')
+      .where('emp.email = :email', { email })
+      .getOne();
 
     if (!user) {
-      console.error('❌ User not found:', username);
+      console.error('❌ User not found:', email);
       throw new UnauthorizedException('Invalid credentials');
     }
 
     console.log('✅ User found:', {
       user_id: user.user_id,
-      username: user.username,
+      email: user.employee?.email,
       password_changed: user.password_changed,
     });
 
     // Check if employee account is active
     if (!user.employee || !user.employee.employment_status) {
-      console.error('❌ Account is not active:', username);
+      console.error('❌ Account is not active:', email);
       throw new UnauthorizedException('Account is not active');
     }
 
@@ -61,14 +63,14 @@ export class AuthService {
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     console.log('🔍 Password comparison result:', {
-      username: user.username,
+      email: user.employee?.email,
       isPasswordValid: isPasswordValid,
       providedPasswordLength: password.length,
       storedPasswordHash: user.password.substring(0, 20) + '...',
     });
 
     if (!isPasswordValid) {
-      console.error('❌ Invalid password for user:', username);
+      console.error('❌ Invalid password for user:', email);
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -84,7 +86,7 @@ export class AuthService {
       departmentId: user.employee?.department_id || null,
     };
 
-    console.log('✅ JWT token generated for user:', username);
+    console.log('✅ JWT token generated for user:', email);
 
     return {
       access_token: this.jwtService.sign(payload),
