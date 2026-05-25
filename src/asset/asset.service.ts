@@ -159,7 +159,7 @@ export class AssetService {
   async findOne(asset_id: string): Promise<Asset> {
     const asset = await this.assetRepository.findOne({
       where: { asset_id, is_deleted: false },
-      relations: ['brand', 'branch', 'assignedEmployee'],
+      relations: ['brand', 'branch'],
     });
 
     if (!asset) {
