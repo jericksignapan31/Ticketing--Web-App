@@ -78,10 +78,11 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  const port = process.env.PORT || 3005;
-  await app.listen(port, '0.0.0.0');
-  const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
-  console.log(`Application is running on: ${baseUrl}`);
-  console.log(`Swagger documentation is available at: ${baseUrl}/api`);
+  const port = parseInt(process.env.PORT || '3000', 10);
+  await app.listen(port, '0.0.0.0', () => {
+    const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`;
+    console.log(`\n✅ Application listening on port ${port}`);
+    console.log(`📍 Base URL: ${baseUrl}`);
+    console.log(`📚 Swagger API: ${baseUrl}/api\n`);
+  });
 }
-bootstrap();
