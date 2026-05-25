@@ -61,12 +61,29 @@ export class AssetController {
       'Returns all assets for admin/IT, or department assets for employees/supervisors',
   })
   findAll(@CurrentUser() user: any) {
-    // If employee or supervisor role, return only assets from their department
-    if ((user.role === 'employee' || user.role === 'supervisor') && user.departmentId) {
-      return this.assetService.findByDepartment(user.departmentId);
+    console.log('📋 GET /assets called for user:', {
+      user_id: user.sub,
+      role: user.role,
+      departmentId: user.departmentId,
+      branchId: user.branchId,
+    });
+
+    try {
+      // If employee or supervisor role, return only assets from their department
+      if ((user.role === 'employee' || user.role === 'supervisor') && user.departmentId) {
+        console.log('🔄 Filtering by department:', user.departmentId);
+        return this.assetService.findByDepartment(user.departmentId);
+      }
+      // For admin, IT - return all assets
+      console.log('🌍 Returning all assets for admin/IT');
+      return this.assetService.findAll();
+    } catch (error) {
+      console.error('❌ Error in findAll:', {
+        message: error.message,
+        stack: error.stack,
+      });
+      throw error;
     }
-    // For admin, IT - return all assets
-    return this.assetService.findAll();
   }
 
   @Get('search')

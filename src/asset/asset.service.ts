@@ -77,10 +77,22 @@ export class AssetService {
   }
 
   async findAll(): Promise<Asset[]> {
-    return await this.assetRepository.find({
-      relations: ['brand', 'branch', 'assignedEmployee'],
-      order: { created_at: 'DESC' },
-    });
+    try {
+      console.log('📋 Finding all assets');
+      const assets = await this.assetRepository.find({
+        relations: ['brand', 'branch', 'assignedEmployee'],
+        order: { created_at: 'DESC' },
+      });
+      console.log('✅ Found all assets:', assets.length);
+      return assets;
+    } catch (error) {
+      console.error('❌ Error finding all assets:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+      });
+      throw error;
+    }
   }
 
   async findOne(asset_id: string): Promise<Asset> {
@@ -227,14 +239,36 @@ export class AssetService {
   async findByDepartment(department_id: string): Promise<Asset[]> {
     // Find all assets assigned to employees in the same department
     // Use INNER JOIN to only get assets with assigned employees
-    return await this.assetRepository
-      .createQueryBuilder('asset')
-      .innerJoinAndSelect('asset.assignedEmployee', 'employee')
-      .leftJoinAndSelect('asset.brand', 'brand')
-      .leftJoinAndSelect('asset.branch', 'branch')
-      .where('employee.department_id = :department_id', { department_id })
-      .orderBy('asset.created_at', 'DESC')
-      .getMany();
+    console.log('🔍 Finding assets by department:', department_id);
+    
+    try {
+      const query = this.assetRepository
+        .createQueryBuilder('asset')
+        .innerJoinAndSelect('asset.assignedEmployee', 'employee')
+        .leftJoinAndSelect('asset.brand', 'brand')
+        .leftJoinAndSelect('asset.branch', 'branch')
+        .where('employee.department_id = :department_id', { department_id })
+        .orderBy('asset.created_at', 'DESC');
+      
+      console.log('📝 Query SQL:', query.getSql());
+      console.log('📋 Query params:', { department_id });
+
+      const assets = await query.getMany();
+      
+      console.log('✅ Found assets:', assets.length);
+      return assets;
+    } catch (error) {
+      console.error('❌ Error finding assets by department:', {
+        department_id,
+        message: error.message,
+        code: error.code,
+        sqlState: error.sqlState,
+        detail: error.detail,
+        hint: error.hint,
+        stack: error.stack,
+      });
+      throw error;
+    }
   }
 
   async findByBranch(branch_id: string): Promise<Asset[]> {
