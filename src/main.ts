@@ -11,16 +11,40 @@ async function runMigrations() {
       await AppDataSource.initialize();
     }
     
-    // Ensure soft delete columns exist on asset table
-    await AppDataSource.query(`
-      ALTER TABLE "asset" 
-      ADD COLUMN IF NOT EXISTS "is_deleted" boolean NOT NULL DEFAULT false,
-      ADD COLUMN IF NOT EXISTS "deleted_at" timestamp NULL
-    `);
+    console.log('🔄 Running migrations...');
     
-    console.log('✅ Migration: Soft delete columns verified/added to asset table');
+    // Add is_deleted column
+    try {
+      await AppDataSource.query(
+        `ALTER TABLE "asset" ADD COLUMN "is_deleted" boolean NOT NULL DEFAULT false`
+      );
+      console.log('✅ Added is_deleted column to asset table');
+    } catch (error) {
+      if ((error as any).message?.includes('already exists')) {
+        console.log('✓ is_deleted column already exists');
+      } else {
+        throw error;
+      }
+    }
+    
+    // Add deleted_at column
+    try {
+      await AppDataSource.query(
+        `ALTER TABLE "asset" ADD COLUMN "deleted_at" timestamp NULL`
+      );
+      console.log('✅ Added deleted_at column to asset table');
+    } catch (error) {
+      if ((error as any).message?.includes('already exists')) {
+        console.log('✓ deleted_at column already exists');
+      } else {
+        throw error;
+      }
+    }
+    
+    console.log('✅ All migrations completed successfully');
   } catch (error) {
-    console.warn('⚠️ Migration check: Asset soft delete columns may already exist');
+    console.error('❌ Migration error:', error);
+    throw error;
   }
 }
 
