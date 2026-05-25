@@ -171,18 +171,14 @@ export class AssetService {
 
   async searchByDepartment(query: string, department_id: string): Promise<Asset[]> {
     // Search assets assigned to employees in the same department
-    // Use INNER JOIN to only get assets with assigned employees in that department
+    // Use INNER JOIN to only get assets with assigned employees
     return await this.assetRepository
       .createQueryBuilder('asset')
-      .innerJoinAndSelect(
-        'asset.assignedEmployee',
-        'employee',
-        'employee.department_id = :department_id',
-        { department_id },
-      )
+      .innerJoinAndSelect('asset.assignedEmployee', 'employee')
       .leftJoinAndSelect('asset.brand', 'brand')
       .leftJoinAndSelect('asset.branch', 'branch')
-      .where(
+      .where('employee.department_id = :department_id', { department_id })
+      .andWhere(
         '(asset.asset_tag ILIKE :query OR asset.category ILIKE :query OR asset.model ILIKE :query OR asset.serial_number ILIKE :query)',
         { query: `%${query}%` },
       )
@@ -233,9 +229,10 @@ export class AssetService {
     // Use INNER JOIN to only get assets with assigned employees
     return await this.assetRepository
       .createQueryBuilder('asset')
-      .innerJoinAndSelect('asset.assignedEmployee', 'employee', 'employee.department_id = :department_id', { department_id })
+      .innerJoinAndSelect('asset.assignedEmployee', 'employee')
       .leftJoinAndSelect('asset.brand', 'brand')
       .leftJoinAndSelect('asset.branch', 'branch')
+      .where('employee.department_id = :department_id', { department_id })
       .orderBy('asset.created_at', 'DESC')
       .getMany();
   }
