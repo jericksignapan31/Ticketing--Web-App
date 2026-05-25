@@ -62,7 +62,7 @@ export class UserAccountController {
   })
   @ApiResponse({ status: 404, description: 'User account not found' })
   findByUserId(@Param('user_id') user_id: string) {
-    return this.userAccountService.findByUserId(+user_id);
+    return this.userAccountService.findByUserId(user_id);
   }
 
   @Get('employee/:employee_id')
@@ -78,7 +78,7 @@ export class UserAccountController {
   })
   @ApiResponse({ status: 404, description: 'User account not found' })
   findByEmployeeId(@Param('employee_id') employee_id: string) {
-    return this.userAccountService.findByEmployeeId(+employee_id);
+    return this.userAccountService.findByEmployeeId(employee_id);
   }
 
   @Get('username/:username')

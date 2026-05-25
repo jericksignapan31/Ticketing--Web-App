@@ -12,17 +12,17 @@ import { Asset } from './asset.entity';
 
 @Entity('ticket')
 export class Ticket {
-  @PrimaryGeneratedColumn()
-  ticket_id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  ticket_id!: string;
 
   @Column()
-  employee_id!: number;
+  employee_id!: string;
 
   @Column({ nullable: true })
-  asset_id?: number;
+  asset_id?: string;
 
   @Column({ nullable: true })
-  assigned_to?: number;
+  assigned_to?: string;
 
   @Column({ type: 'text', nullable: true })
   image_url?: string;
@@ -40,7 +40,7 @@ export class Ticket {
   approval_status!: string;
 
   @Column({ nullable: true })
-  approved_by?: number;
+  approved_by?: string;
 
   @Column({ type: 'timestamp', nullable: true })
   approved_at?: Date;

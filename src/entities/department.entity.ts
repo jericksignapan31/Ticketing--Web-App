@@ -10,8 +10,8 @@ import { Employee } from './employee.entity';
 
 @Entity('department')
 export class Department {
-  @PrimaryGeneratedColumn()
-  department_id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  department_id!: string;
 
   @Column()
   department_name!: string;

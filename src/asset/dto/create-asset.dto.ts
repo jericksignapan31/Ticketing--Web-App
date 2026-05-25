@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAssetDto {
@@ -8,21 +8,21 @@ export class CreateAssetDto {
   asset_tag: string;
 
   @ApiProperty({
-    example: 1,
+    example: 'uuid-of-brand',
     required: false,
   })
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  brand_id?: number;
+  brand_id?: string;
 
   @ApiProperty({
-    example: 1,
+    example: 'uuid-of-branch',
     description: 'Branch/Station ID where the asset is located',
     required: false,
   })
-  @IsNumber()
+  @IsString()
   @IsOptional()
-  branch_id?: number;
+  branch_id?: string;
 
   @ApiProperty({ example: 'Laptop' })
   @IsString()
@@ -48,10 +48,10 @@ export class CreateAssetDto {
   @IsOptional()
   status?: string;
 
-  @ApiProperty({ example: 1, required: false })
-  @IsNumber()
+  @ApiProperty({ example: 'EMP001', required: false })
+  @IsString()
   @IsOptional()
-  assigned_to?: number;
+  assigned_to?: string;
 
   @ApiProperty({
     example: 'Additional notes about the asset',

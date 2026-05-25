@@ -130,13 +130,13 @@ export class AssetController {
   @Get('employee/:employee_id')
   @ApiOperation({ summary: 'Get assets assigned to a specific employee' })
   findByEmployee(@Param('employee_id') employee_id: string) {
-    return this.assetService.findByEmployee(+employee_id);
+    return this.assetService.findByEmployee(employee_id);
   }
 
   @Get('branch/:branch_id')
   @ApiOperation({ summary: 'Get assets by branch/station' })
   findByBranch(@Param('branch_id') branch_id: string) {
-    return this.assetService.findByBranch(+branch_id);
+    return this.assetService.findByBranch(branch_id);
   }
 
   @Get('status/:status')
@@ -169,7 +169,7 @@ export class AssetController {
       const parsedOffset = offset ? parseInt(offset, 10) : 0;
 
       const history = await this.assetHistoryService.getAssetHistory(
-        +asset_id,
+        asset_id,
         parsedLimit,
         parsedOffset,
         type,
@@ -196,18 +196,18 @@ export class AssetController {
   @Get(':id')
   @ApiOperation({ summary: 'Get an asset by ID' })
   findOne(@Param('id') id: string) {
-    return this.assetService.findOne(+id);
+    return this.assetService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an asset' })
   update(@Param('id') id: string, @Body() updateAssetDto: UpdateAssetDto) {
-    return this.assetService.update(+id, updateAssetDto);
+    return this.assetService.update(id, updateAssetDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete an asset' })
   remove(@Param('id') id: string) {
-    return this.assetService.remove(+id);
+    return this.assetService.remove(id);
   }
 }

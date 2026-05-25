@@ -24,7 +24,7 @@ export class AssetHistoryService {
   ) {}
 
   async getAssetHistory(
-    assetId: number,
+    assetId: string,
     limit: number = 50,
     offset: number = 0,
     type?: string,
@@ -100,7 +100,7 @@ export class AssetHistoryService {
 
     allEvents.push(
       ...repairs.map(rl => ({
-        id: rl.repair_id,
+        id: rl.repair_log_id,
         type: 'repair',
         description: rl.issue_description || 'Repair performed',
         repairType: rl.status,

@@ -43,13 +43,13 @@ export class RepairLogController {
   @Get('asset/:asset_id')
   @ApiOperation({ summary: 'Get repair logs for a specific asset' })
   findByAsset(@Param('asset_id') asset_id: string) {
-    return this.repairLogService.findByAsset(+asset_id);
+    return this.repairLogService.findByAsset(asset_id);
   }
 
   @Get('repairer/:employee_id')
   @ApiOperation({ summary: 'Get repair logs by repairer' })
   findByRepairer(@Param('employee_id') employee_id: string) {
-    return this.repairLogService.findByRepairer(+employee_id);
+    return this.repairLogService.findByRepairer(employee_id);
   }
 
   @Get('status/:status')
@@ -61,7 +61,7 @@ export class RepairLogController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a repair log by ID' })
   findOne(@Param('id') id: string) {
-    return this.repairLogService.findOne(+id);
+    return this.repairLogService.findOne(id);
   }
 
   @Patch(':id')
@@ -70,12 +70,12 @@ export class RepairLogController {
     @Param('id') id: string,
     @Body() updateRepairLogDto: UpdateRepairLogDto,
   ) {
-    return this.repairLogService.update(+id, updateRepairLogDto);
+    return this.repairLogService.update(id, updateRepairLogDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a repair log' })
   remove(@Param('id') id: string) {
-    return this.repairLogService.remove(+id);
+    return this.repairLogService.remove(id);
   }
 }

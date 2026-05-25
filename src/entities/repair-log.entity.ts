@@ -12,17 +12,17 @@ import { Employee } from './employee.entity';
 
 @Entity('repair_log')
 export class RepairLog {
-  @PrimaryGeneratedColumn()
-  repair_id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  repair_log_id!: string;
 
   @Column()
-  asset_id!: number;
+  asset_id!: string;
 
   @Column({ nullable: true })
-  reported_by?: number;
+  reported_by?: string;
 
   @Column({ nullable: true })
-  repaired_by?: number;
+  repaired_by?: string;
 
   @Column({ type: 'timestamp' })
   repair_date!: Date;

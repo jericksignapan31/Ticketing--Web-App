@@ -26,7 +26,7 @@ export class BranchService {
     }
   }
 
-  async findOne(branch_id: number): Promise<Branch> {
+  async findOne(branch_id: string): Promise<Branch> {
     const branch = await this.branchRepository.findOne({
       where: { branch_id },
       relations: ['employees', 'assets'],
@@ -40,7 +40,7 @@ export class BranchService {
   }
 
   async update(
-    branch_id: number,
+    branch_id: string,
     updateBranchDto: UpdateBranchDto,
   ): Promise<Branch> {
     const branch = await this.findOne(branch_id);
@@ -49,7 +49,7 @@ export class BranchService {
     return await this.branchRepository.save(branch);
   }
 
-  async updateStatus(branch_id: number, status: string): Promise<Branch> {
+  async updateStatus(branch_id: string, status: string): Promise<Branch> {
     const branch = await this.findOne(branch_id);
 
     // Validate status
@@ -64,7 +64,7 @@ export class BranchService {
     return await this.branchRepository.save(branch);
   }
 
-  async remove(branch_id: number): Promise<void> {
+  async remove(branch_id: string): Promise<void> {
     const branch = await this.findOne(branch_id);
     await this.branchRepository.remove(branch);
   }
@@ -79,7 +79,7 @@ export class BranchService {
     });
   }
 
-  async getInventory(branch_id: number): Promise<Branch> {
+  async getInventory(branch_id: string): Promise<Branch> {
     const branch = await this.branchRepository.findOne({
       where: { branch_id },
       relations: ['assets', 'assets.brand', 'assets.assignedEmployee'],

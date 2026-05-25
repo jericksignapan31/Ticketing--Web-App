@@ -45,14 +45,14 @@ export class EmployeeService {
       );
     }
 
-    // Check if email already exists as username
+    // Check if username already exists
     const existingUsername = await this.userAccountRepository.findOne({
-      where: { username: createEmployeeDto.email },
+      where: { username: createEmployeeDto.employee_id },
     });
 
     if (existingUsername) {
       throw new ConflictException(
-        `Email ${createEmployeeDto.email} already exists`,
+        `Username ${createEmployeeDto.employee_id} already exists`,
       );
     }
 
@@ -62,21 +62,17 @@ export class EmployeeService {
       const employee = manager.create(Employee, createEmployeeDto);
       const savedEmployee = await manager.save(employee);
 
-      // Generate temporary password (6-digit number)
-      const temporaryPassword = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Hash password
+      // Hash password (using employee_id as password)
       const hashedPassword = await bcrypt.hash(
-        temporaryPassword,
+        createEmployeeDto.employee_id,
         SecurityConfig.password.saltRounds,
       );
 
-      // Create user account with email as username
+      // Create user account with username and password both as employee_id
       const userAccount = manager.create(UserAccount, {
         employee_id: savedEmployee.employee_id,
-        username: createEmployeeDto.email,
+        username: savedEmployee.employee_id,
         password: hashedPassword,
-        password_changed: false,
       });
       await manager.save(userAccount);
 
@@ -121,7 +117,7 @@ export class EmployeeService {
     return await queryBuilder.getMany();
   }
 
-  async findOne(employee_id: number): Promise<Employee> {
+  async findOne(employee_id: string): Promise<Employee> {
     const employee = await this.employeeRepository.findOne({
       where: { employee_id },
       relations: ['branch', 'department', 'userAccount'],
@@ -135,7 +131,7 @@ export class EmployeeService {
   }
 
   async update(
-    employee_id: number,
+    employee_id: string,
     updateEmployeeDto: UpdateEmployeeDto,
   ): Promise<Employee> {
     const employee = await this.findOne(employee_id);
@@ -158,7 +154,7 @@ export class EmployeeService {
   }
 
   async updateEmploymentStatus(
-    employee_id: number,
+    employee_id: string,
     employment_status: boolean,
   ): Promise<Employee> {
     const employee = await this.findOne(employee_id);
@@ -174,7 +170,7 @@ export class EmployeeService {
     return await this.employeeRepository.save(employee);
   }
 
-  async verifyEmployee(employee_id: number): Promise<{ message: string }> {
+  async verifyEmployee(employee_id: string): Promise<{ message: string }> {
     const employee = await this.findOne(employee_id);
 
     // Activate employee (this will automatically activate login access)
@@ -186,7 +182,7 @@ export class EmployeeService {
     };
   }
 
-  async remove(employee_id: number): Promise<void> {
+  async remove(employee_id: string): Promise<void> {
     const employee = await this.findOne(employee_id);
     await this.employeeRepository.remove(employee);
   }
@@ -201,7 +197,7 @@ export class EmployeeService {
       .getMany();
   }
 
-  async findByBranch(branch_id: number): Promise<Employee[]> {
+  async findByBranch(branch_id: string): Promise<Employee[]> {
     return await this.employeeRepository.find({
       where: {
         branch_id,
@@ -215,7 +211,7 @@ export class EmployeeService {
   }
 
   async resetPasswordByAdmin(
-    employee_id: number,
+    employee_id: string,
   ): Promise<{ message: string; defaultPassword: string }> {
     // Find employee
     const employee = await this.findOne(employee_id);

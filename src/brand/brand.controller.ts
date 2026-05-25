@@ -43,18 +43,18 @@ export class BrandController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a brand by ID' })
   findOne(@Param('id') id: string) {
-    return this.brandService.findOne(+id);
+    return this.brandService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a brand' })
   update(@Param('id') id: string, @Body() updateBrandDto: UpdateBrandDto) {
-    return this.brandService.update(+id, updateBrandDto);
+    return this.brandService.update(id, updateBrandDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a brand' })
   remove(@Param('id') id: string) {
-    return this.brandService.remove(+id);
+    return this.brandService.remove(id);
   }
 }

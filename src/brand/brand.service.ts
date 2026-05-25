@@ -23,7 +23,7 @@ export class BrandService {
     });
   }
 
-  async findOne(brand_id: number): Promise<Brand> {
+  async findOne(brand_id: string): Promise<Brand> {
     const brand = await this.brandRepository.findOne({
       where: { brand_id },
     });
@@ -36,7 +36,7 @@ export class BrandService {
   }
 
   async update(
-    brand_id: number,
+    brand_id: string,
     updateBrandDto: UpdateBrandDto,
   ): Promise<Brand> {
     const brand = await this.findOne(brand_id);
@@ -45,7 +45,7 @@ export class BrandService {
     return await this.brandRepository.save(brand);
   }
 
-  async remove(brand_id: number): Promise<void> {
+  async remove(brand_id: string): Promise<void> {
     const brand = await this.findOne(brand_id);
     await this.brandRepository.remove(brand);
   }

@@ -47,13 +47,13 @@ export class BranchController {
     summary: 'Get branch inventory (all assets in this station)',
   })
   getInventory(@Param('id') id: string) {
-    return this.branchService.getInventory(+id);
+    return this.branchService.getInventory(id);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a branch by ID (Public)' })
   findOne(@Param('id') id: string) {
-    return this.branchService.findOne(+id);
+    return this.branchService.findOne(id);
   }
 
   @Patch(':id')
@@ -61,7 +61,7 @@ export class BranchController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a branch (Authenticated)' })
   update(@Param('id') id: string, @Body() updateBranchDto: UpdateBranchDto) {
-    return this.branchService.update(+id, updateBranchDto);
+    return this.branchService.update(id, updateBranchDto);
   }
 
   @Patch(':id/status')
@@ -69,7 +69,7 @@ export class BranchController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update branch status (active/inactive)' })
   updateStatus(@Param('id') id: string, @Body('status') status: string) {
-    return this.branchService.updateStatus(+id, status);
+    return this.branchService.updateStatus(id, status);
   }
 
   @Delete(':id')
@@ -77,6 +77,6 @@ export class BranchController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a branch (Authenticated)' })
   remove(@Param('id') id: string) {
-    return this.branchService.remove(+id);
+    return this.branchService.remove(id);
   }
 }

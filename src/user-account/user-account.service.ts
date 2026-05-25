@@ -27,7 +27,7 @@ export class UserAccountService {
     });
   }
 
-  async findByUserId(user_id: number): Promise<UserAccount> {
+  async findByUserId(user_id: string): Promise<UserAccount> {
     const userAccount = await this.userAccountRepository.findOne({
       where: { user_id },
       relations: ['employee', 'employee.branch', 'employee.department'],
@@ -47,7 +47,7 @@ export class UserAccountService {
     return userAccount;
   }
 
-  async findByEmployeeId(employee_id: number): Promise<UserAccount> {
+  async findByEmployeeId(employee_id: string): Promise<UserAccount> {
     const userAccount = await this.userAccountRepository.findOne({
       where: { employee_id },
       relations: ['employee', 'employee.branch', 'employee.department'],
