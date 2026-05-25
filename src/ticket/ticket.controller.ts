@@ -63,13 +63,13 @@ export class TicketController {
   @Get('reporter/:employee_id')
   @ApiOperation({ summary: 'Get tickets reported by a specific employee' })
   findByReporter(@Param('employee_id') employee_id: string) {
-    return this.ticketService.findByReporter(employee_id);
+    return this.ticketService.findByReporter(+employee_id);
   }
 
   @Get('assignee/:employee_id')
   @ApiOperation({ summary: 'Get tickets assigned to a specific employee' })
   findByAssignee(@Param('employee_id') employee_id: string) {
-    return this.ticketService.findByAssignee(employee_id);
+    return this.ticketService.findByAssignee(+employee_id);
   }
 
   @Get('status/:status')
@@ -129,7 +129,7 @@ export class TicketController {
     @Body() approveTicketDto: ApproveTicketDto,
   ) {
     return this.ticketService.approveTicket(
-      id,
+      +id,
       user.employee_id,
       approveTicketDto,
     );
@@ -149,7 +149,7 @@ export class TicketController {
     @Body() rejectTicketDto: RejectTicketDto,
   ) {
     return this.ticketService.rejectTicket(
-      id,
+      +id,
       user.employee_id,
       rejectTicketDto,
     );
@@ -175,7 +175,7 @@ export class TicketController {
     @CurrentUser() user: any,
     @Body() startWorkDto: StartWorkDto,
   ) {
-    return this.ticketService.startWork(id, user.employee_id, startWorkDto);
+    return this.ticketService.startWork(+id, user.employee_id, startWorkDto);
   }
 
   @Patch(':id/complete')
@@ -197,7 +197,7 @@ export class TicketController {
     @Body() completeTicketDto: CompleteTicketDto,
   ) {
     return this.ticketService.completeTicket(
-      id,
+      +id,
       user.employee_id,
       completeTicketDto,
     );
@@ -206,18 +206,18 @@ export class TicketController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a ticket by ID' })
   findOne(@Param('id') id: string) {
-    return this.ticketService.findOne(id);
+    return this.ticketService.findOne(+id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a ticket' })
   update(@Param('id') id: string, @Body() updateTicketDto: UpdateTicketDto) {
-    return this.ticketService.update(id, updateTicketDto);
+    return this.ticketService.update(+id, updateTicketDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a ticket' })
   remove(@Param('id') id: string) {
-    return this.ticketService.remove(id);
+    return this.ticketService.remove(+id);
   }
 }

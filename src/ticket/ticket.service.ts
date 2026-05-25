@@ -42,7 +42,7 @@ export class TicketService {
     });
   }
 
-  async findOne(ticket_id: string): Promise<Ticket> {
+  async findOne(ticket_id: number): Promise<Ticket> {
     const ticket = await this.ticketRepository.findOne({
       where: { ticket_id },
       relations: [
@@ -63,7 +63,7 @@ export class TicketService {
   }
 
   async update(
-    ticket_id: string,
+    ticket_id: number,
     updateTicketDto: UpdateTicketDto,
   ): Promise<Ticket> {
     const ticket = await this.findOne(ticket_id);
@@ -72,7 +72,7 @@ export class TicketService {
     return await this.ticketRepository.save(ticket);
   }
 
-  async remove(ticket_id: string): Promise<void> {
+  async remove(ticket_id: number): Promise<void> {
     const ticket = await this.findOne(ticket_id);
     await this.ticketRepository.remove(ticket);
   }
@@ -96,7 +96,7 @@ export class TicketService {
     });
   }
 
-  async findByReporter(employee_id: string): Promise<Ticket[]> {
+  async findByReporter(employee_id: number): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       where: { employee_id },
       relations: [
@@ -111,7 +111,7 @@ export class TicketService {
     });
   }
 
-  async findByAssignee(employee_id: string): Promise<Ticket[]> {
+  async findByAssignee(employee_id: number): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       where: { assigned_to: employee_id },
       relations: [
@@ -172,8 +172,8 @@ export class TicketService {
   }
 
   async approveTicket(
-    ticket_id: string,
-    supervisor_id: string,
+    ticket_id: number,
+    supervisor_id: number,
     approveTicketDto: ApproveTicketDto,
   ): Promise<Ticket> {
     const ticket = await this.findOne(ticket_id);
@@ -201,8 +201,8 @@ export class TicketService {
   }
 
   async rejectTicket(
-    ticket_id: string,
-    supervisor_id: string,
+    ticket_id: number,
+    supervisor_id: number,
     rejectTicketDto: RejectTicketDto,
   ): Promise<Ticket> {
     const ticket = await this.findOne(ticket_id);
@@ -255,8 +255,8 @@ export class TicketService {
   }
 
   async startWork(
-    ticket_id: string,
-    it_staff_id: string,
+    ticket_id: number,
+    it_staff_id: number,
     startWorkDto: StartWorkDto,
   ): Promise<Ticket> {
     const ticket = await this.findOne(ticket_id);
@@ -287,8 +287,8 @@ export class TicketService {
   }
 
   async completeTicket(
-    ticket_id: string,
-    it_staff_id: string,
+    ticket_id: number,
+    it_staff_id: number,
     completeTicketDto: CompleteTicketDto,
   ): Promise<Ticket> {
     const ticket = await this.findOne(ticket_id);

@@ -11,8 +11,8 @@ import { Asset } from './asset.entity';
 
 @Entity('branch')
 export class Branch {
-  @PrimaryGeneratedColumn('uuid')
-  branch_id!: string;
+  @PrimaryGeneratedColumn()
+  branch_id!: number;
 
   @Column()
   branch_name!: string;

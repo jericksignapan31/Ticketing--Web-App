@@ -15,20 +15,20 @@ import { UserAccount } from './user-account.entity';
 @Index('asset_id')
 @Index('created_at')
 export class AssetMovementHistory {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
   @Column()
-  asset_id!: string;
+  asset_id!: number;
 
   @Column({ nullable: true })
-  from_branch_id?: string;
+  from_branch_id?: number;
 
   @Column()
-  to_branch_id!: string;
+  to_branch_id!: number;
 
   @Column()
-  moved_by!: string;
+  moved_by!: number;
 
   @Column({ type: 'text', nullable: true })
   reason?: string;

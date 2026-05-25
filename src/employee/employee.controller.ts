@@ -102,7 +102,7 @@ export class EmployeeController {
     description: 'List of active employees in the specified branch',
   })
   findByBranch(@Param('branch_id') branch_id: string) {
-    return this.employeeService.findByBranch(branch_id);
+    return this.employeeService.findByBranch(+branch_id);
   }
 
   @Get(':id')
@@ -118,7 +118,7 @@ export class EmployeeController {
   })
   @ApiResponse({ status: 404, description: 'Employee not found' })
   findOne(@Param('id') id: string) {
-    return this.employeeService.findOne(id);
+    return this.employeeService.findOne(+id);
   }
 
   @Patch(':id')
@@ -141,7 +141,7 @@ export class EmployeeController {
     @Param('id') id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
-    return this.employeeService.update(id, updateEmployeeDto);
+    return this.employeeService.update(+id, updateEmployeeDto);
   }
 
   @Patch(':id/status')
@@ -164,7 +164,7 @@ export class EmployeeController {
     @Param('id') id: string,
     @Body('employment_status') employment_status: boolean,
   ) {
-    return this.employeeService.updateEmploymentStatus(id, employment_status);
+    return this.employeeService.updateEmploymentStatus(+id, employment_status);
   }
 
   @Patch(':id/verify')
@@ -185,7 +185,7 @@ export class EmployeeController {
   @ApiResponse({ status: 404, description: 'Employee not found' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   verifyEmployee(@Param('id') id: string) {
-    return this.employeeService.verifyEmployee(id);
+    return this.employeeService.verifyEmployee(+id);
   }
 
   @Patch(':id/reset-password')
@@ -210,7 +210,7 @@ export class EmployeeController {
   })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   resetPassword(@Param('id') id: string) {
-    return this.employeeService.resetPasswordByAdmin(id);
+    return this.employeeService.resetPasswordByAdmin(+id);
   }
 
   @Delete(':id')
@@ -230,6 +230,6 @@ export class EmployeeController {
   @ApiResponse({ status: 404, description: 'Employee not found' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin role required' })
   remove(@Param('id') id: string) {
-    return this.employeeService.remove(id);
+    return this.employeeService.remove(+id);
   }
 }

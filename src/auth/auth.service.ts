@@ -114,7 +114,7 @@ export class AuthService {
   }
 
   async changePassword(
-    userId: string,
+    userId: number,
     changePasswordDto: ChangePasswordDto,
   ): Promise<{ message: string }> {
     const { currentPassword, newPassword } = changePasswordDto;
@@ -192,7 +192,7 @@ export class AuthService {
     return { message: 'Password changed successfully' };
   }
 
-  async getProfile(userId: string) {
+  async getProfile(userId: number) {
     const user = await this.userAccountRepository.findOne({
       where: { user_id: userId },
       relations: ['employee', 'employee.branch', 'employee.department'],

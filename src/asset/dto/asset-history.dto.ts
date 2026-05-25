@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AssetHistoryEventDto {
-  @ApiProperty({ example: '1' })
-  id: string;
+  @ApiProperty({ example: 1 })
+  id: number;
 
   @ApiProperty({ example: 'status_change', enum: ['status_change', 'assignment', 'repair', 'movement'] })
   type: 'status_change' | 'assignment' | 'repair' | 'movement';
@@ -30,8 +30,8 @@ export class AssetHistoryEventDto {
 }
 
 export class AssetHistoryResponseDto {
-  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
-  assetId: string;
+  @ApiProperty({ example: 1 })
+  assetId: number;
 
   @ApiProperty({ example: 'LAP-2024-001' })
   assetTag: string;

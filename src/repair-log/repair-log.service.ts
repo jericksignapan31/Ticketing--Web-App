@@ -24,15 +24,15 @@ export class RepairLogService {
     });
   }
 
-  async findOne(repair_log_id: string): Promise<RepairLog> {
+  async findOne(repair_id: number): Promise<RepairLog> {
     const repairLog = await this.repairLogRepository.findOne({
-      where: { repair_log_id },
+      where: { repair_id },
       relations: ['asset', 'reporter', 'repairer'],
     });
 
     if (!repairLog) {
       throw new NotFoundException(
-        `Repair log with ID '${repair_log_id}' not found`,
+        `Repair log with ID '${repair_id}' not found`,
       );
     }
 
@@ -40,17 +40,17 @@ export class RepairLogService {
   }
 
   async update(
-    repair_log_id: string,
+    repair_id: number,
     updateRepairLogDto: UpdateRepairLogDto,
   ): Promise<RepairLog> {
-    const repairLog = await this.findOne(repair_log_id);
+    const repairLog = await this.findOne(repair_id);
 
     Object.assign(repairLog, updateRepairLogDto);
     return await this.repairLogRepository.save(repairLog);
   }
 
-  async remove(repair_log_id: string): Promise<void> {
-    const repairLog = await this.findOne(repair_log_id);
+  async remove(repair_id: number): Promise<void> {
+    const repairLog = await this.findOne(repair_id);
     await this.repairLogRepository.remove(repairLog);
   }
 
@@ -65,7 +65,7 @@ export class RepairLogService {
     });
   }
 
-  async findByAsset(asset_id: string): Promise<RepairLog[]> {
+  async findByAsset(asset_id: number): Promise<RepairLog[]> {
     return await this.repairLogRepository.find({
       where: { asset_id },
       relations: ['asset', 'reporter', 'repairer'],
@@ -73,7 +73,7 @@ export class RepairLogService {
     });
   }
 
-  async findByRepairer(employee_id: string): Promise<RepairLog[]> {
+  async findByRepairer(employee_id: number): Promise<RepairLog[]> {
     return await this.repairLogRepository.find({
       where: { repaired_by: employee_id },
       relations: ['asset', 'reporter', 'repairer'],

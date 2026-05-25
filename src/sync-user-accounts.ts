@@ -41,18 +41,20 @@ async function syncUserAccounts() {
         continue;
       }
 
-      // Create user account with employee_id as username and password
-      const hashedPassword = await bcrypt.hash(employee.employee_id, 10);
+      // Create user account with email as username and 6-digit temp password
+      const temporaryPassword = Math.floor(100000 + Math.random() * 900000).toString();
+      const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
 
       const userAccount = userAccountRepo.create({
         employee_id: employee.employee_id,
-        username: employee.employee_id,
+        username: employee.email || employee.employee_id.toString(),
         password: hashedPassword,
+        password_changed: false,
       });
 
       await userAccountRepo.save(userAccount);
       console.log(
-        `✅ Created user account for ${employee.employee_id} (username: ${employee.employee_id}, password: ${employee.employee_id})`,
+        `✅ Created user account for ${employee.employee_id} (username: ${employee.email || employee.employee_id}, temp password: ${temporaryPassword})`,
       );
       created++;
     }

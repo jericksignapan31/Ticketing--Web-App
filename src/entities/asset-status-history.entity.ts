@@ -14,11 +14,11 @@ import { UserAccount } from './user-account.entity';
 @Index('asset_id')
 @Index('created_at')
 export class AssetStatusHistory {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
   @Column()
-  asset_id!: string;
+  asset_id!: number;
 
   @Column({ nullable: true })
   previous_status?: string;
@@ -27,7 +27,7 @@ export class AssetStatusHistory {
   new_status!: string;
 
   @Column()
-  changed_by!: string;
+  changed_by!: number;
 
   @Column({ type: 'text', nullable: true })
   reason?: string;

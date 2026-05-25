@@ -23,7 +23,7 @@ export class DepartmentService {
     });
   }
 
-  async findOne(department_id: string): Promise<Department> {
+  async findOne(department_id: number): Promise<Department> {
     const department = await this.departmentRepository.findOne({
       where: { department_id },
       relations: ['employees'],
@@ -39,7 +39,7 @@ export class DepartmentService {
   }
 
   async update(
-    department_id: string,
+    department_id: number,
     updateDepartmentDto: UpdateDepartmentDto,
   ): Promise<Department> {
     const department = await this.findOne(department_id);
@@ -48,7 +48,7 @@ export class DepartmentService {
     return await this.departmentRepository.save(department);
   }
 
-  async remove(department_id: string): Promise<void> {
+  async remove(department_id: number): Promise<void> {
     const department = await this.findOne(department_id);
     await this.departmentRepository.remove(department);
   }
@@ -64,7 +64,7 @@ export class DepartmentService {
   }
 
   async updateStatus(
-    department_id: string,
+    department_id: number,
     is_active: boolean,
   ): Promise<Department> {
     const department = await this.findOne(department_id);

@@ -97,7 +97,7 @@ export class AssetService {
     }
   }
 
-  async findOne(asset_id: string): Promise<Asset> {
+  async findOne(asset_id: number): Promise<Asset> {
     const asset = await this.assetRepository.findOne({
       where: { asset_id },
       relations: ['brand', 'branch', 'assignedEmployee'],
@@ -111,7 +111,7 @@ export class AssetService {
   }
 
   async update(
-    asset_id: string,
+    asset_id: number,
     updateAssetDto: UpdateAssetDto,
   ): Promise<Asset> {
     const asset = await this.findOne(asset_id);
@@ -165,7 +165,7 @@ export class AssetService {
     return await this.assetRepository.save(asset);
   }
 
-  async remove(asset_id: string): Promise<void> {
+  async remove(asset_id: number): Promise<void> {
     const asset = await this.findOne(asset_id);
     await this.assetRepository.remove(asset);
   }
@@ -183,7 +183,7 @@ export class AssetService {
     });
   }
 
-  async searchByDepartment(query: string, department_id: string): Promise<Asset[]> {
+  async searchByDepartment(query: string, department_id: number): Promise<Asset[]> {
     // Search assets assigned to employees in the same department
     // Use INNER JOIN to only get assets with assigned employees
     return await this.assetRepository
@@ -191,7 +191,7 @@ export class AssetService {
       .innerJoinAndSelect('asset.assignedEmployee', 'employee')
       .leftJoinAndSelect('asset.brand', 'brand')
       .leftJoinAndSelect('asset.branch', 'branch')
-      .where('CAST(employee.department_id AS text) = :department_id', { department_id })
+      .where('employee.department_id = :department_id', { department_id })
       .andWhere(
         '(asset.asset_tag ILIKE :query OR asset.category ILIKE :query OR asset.model ILIKE :query OR asset.serial_number ILIKE :query)',
         { query: `%${query}%` },
@@ -200,7 +200,7 @@ export class AssetService {
       .getMany();
   }
 
-  async searchByBranch(query: string, branch_id: string): Promise<Asset[]> {
+  async searchByBranch(query: string, branch_id: number): Promise<Asset[]> {
     return await this.assetRepository.find({
       where: [
         { asset_tag: Like(`%${query}%`), branch_id },
@@ -215,7 +215,7 @@ export class AssetService {
 
   async searchByUserBranch(
     query: string,
-    employee_id: string,
+    employee_id: number,
   ): Promise<Asset[]> {
     // Get the employee's branch
     const employee = await this.employeeRepository.findOne({
@@ -238,7 +238,7 @@ export class AssetService {
     return this.searchByDepartment(query, employee.department_id);
   }
 
-  async findByDepartment(department_id: string): Promise<Asset[]> {
+  async findByDepartment(department_id: number): Promise<Asset[]> {
     // Find all assets assigned to employees in the same department
     // Use INNER JOIN to only get assets with assigned employees
     console.log('🔍 Finding assets by department:', department_id);
@@ -249,7 +249,7 @@ export class AssetService {
         .innerJoinAndSelect('asset.assignedEmployee', 'employee')
         .leftJoinAndSelect('asset.brand', 'brand')
         .leftJoinAndSelect('asset.branch', 'branch')
-        .where('CAST(employee.department_id AS text) = :department_id', { department_id })
+        .where('employee.department_id = :department_id', { department_id })
         .orderBy('asset.created_at', 'DESC');
       
       console.log('📝 Query SQL:', query.getSql());
@@ -274,7 +274,7 @@ export class AssetService {
     }
   }
 
-  async findByBranch(branch_id: string): Promise<Asset[]> {
+  async findByBranch(branch_id: number): Promise<Asset[]> {
     return await this.assetRepository.find({
       where: { branch_id },
       relations: ['brand', 'branch', 'assignedEmployee'],
@@ -282,7 +282,7 @@ export class AssetService {
     });
   }
 
-  async findByEmployee(employee_id: string): Promise<Asset[]> {
+  async findByEmployee(employee_id: number): Promise<Asset[]> {
     return await this.assetRepository.find({
       where: { assigned_to: employee_id },
       relations: ['brand', 'branch', 'assignedEmployee'],
@@ -298,7 +298,7 @@ export class AssetService {
     });
   }
 
-  async findByUserBranch(employee_id: string): Promise<Asset[]> {
+  async findByUserBranch(employee_id: number): Promise<Asset[]> {
     // Get the employee's branch
     const employee = await this.employeeRepository.findOne({
       where: { employee_id },

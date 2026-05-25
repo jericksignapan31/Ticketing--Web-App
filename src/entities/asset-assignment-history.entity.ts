@@ -15,20 +15,20 @@ import { UserAccount } from './user-account.entity';
 @Index('asset_id')
 @Index('created_at')
 export class AssetAssignmentHistory {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
+  @PrimaryGeneratedColumn()
+  id!: number;
 
   @Column()
-  asset_id!: string;
+  asset_id!: number;
 
   @Column({ nullable: true })
-  previous_employee_id?: string;
+  previous_employee_id?: number;
 
   @Column({ nullable: true })
-  new_employee_id?: string;
+  new_employee_id?: number;
 
   @Column()
-  assigned_by!: string;
+  assigned_by!: number;
 
   @Column({ type: 'text', nullable: true })
   notes?: string;

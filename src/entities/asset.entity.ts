@@ -13,17 +13,17 @@ import { Branch } from './branch.entity';
 
 @Entity('asset')
 export class Asset {
-  @PrimaryGeneratedColumn('uuid')
-  asset_id!: string;
+  @PrimaryGeneratedColumn()
+  asset_id!: number;
 
   @Column({ unique: true })
   asset_tag!: string;
 
-  @Column({ type: 'uuid', nullable: true })
-  brand_id?: string;
+  @Column({ nullable: true })
+  brand_id?: number;
 
-  @Column({ type: 'uuid', nullable: true })
-  branch_id?: string;
+  @Column({ nullable: true })
+  branch_id?: number;
 
   @Column()
   category!: string;
@@ -40,8 +40,8 @@ export class Asset {
   @Column({ default: 'good', nullable: true, type: 'varchar', length: 20 })
   condition?: string;
 
-  @Column({ type: 'uuid', nullable: true })
-  assigned_to?: string;
+  @Column({ nullable: true })
+  assigned_to?: number;
 
   @Column({ type: 'text', nullable: true })
   notes?: string;

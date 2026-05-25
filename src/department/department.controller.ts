@@ -48,7 +48,7 @@ export class DepartmentController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a department by ID (Public)' })
   findOne(@Param('id') id: string) {
-    return this.departmentService.findOne(id);
+    return this.departmentService.findOne(+id);
   }
 
   @Patch(':id')
@@ -59,7 +59,7 @@ export class DepartmentController {
     @Param('id') id: string,
     @Body() updateDepartmentDto: UpdateDepartmentDto,
   ) {
-    return this.departmentService.update(id, updateDepartmentDto);
+    return this.departmentService.update(+id, updateDepartmentDto);
   }
 
   @Delete(':id')
@@ -67,7 +67,7 @@ export class DepartmentController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a department (Authenticated)' })
   remove(@Param('id') id: string) {
-    return this.departmentService.remove(id);
+    return this.departmentService.remove(+id);
   }
 
   @Patch(':id/status')
@@ -88,6 +88,6 @@ export class DepartmentController {
     @Param('id') id: string,
     @Body('is_active') is_active: boolean,
   ) {
-    return this.departmentService.updateStatus(id, is_active);
+    return this.departmentService.updateStatus(+id, is_active);
   }
 }

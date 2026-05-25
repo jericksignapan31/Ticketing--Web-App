@@ -15,14 +15,14 @@ import { UserRole } from '../common/enums/user-role.enum';
 
 @Entity('employee')
 export class Employee {
-  @PrimaryGeneratedColumn('uuid')
-  employee_id!: string;
+  @PrimaryGeneratedColumn()
+  employee_id!: number;
 
-  @Column({ type: 'uuid', nullable: true })
-  branch_id?: string;
+  @Column({ nullable: true })
+  branch_id?: number;
 
-  @Column({ type: 'uuid', nullable: true })
-  department_id?: string;
+  @Column({ nullable: true })
+  department_id?: number;
 
   @Column()
   first_name!: string;

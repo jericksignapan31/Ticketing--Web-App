@@ -6,28 +6,29 @@ import {
   IsOptional,
   IsBoolean,
   IsEnum,
+  IsNumber,
 } from 'class-validator';
 import { UserRole } from '../../common/enums/user-role.enum';
 
 export class CreateEmployeeDto {
-  @ApiProperty({ example: 'EMP002', description: 'Employee ID' })
+  @ApiProperty({ example: 1, description: 'Employee ID' })
   @IsNotEmpty()
-  @IsString()
-  employee_id: string;
+  @IsNumber()
+  employee_id: number;
 
-  @ApiProperty({ example: 'BR001', description: 'Branch ID', required: false })
+  @ApiProperty({ example: 1, description: 'Branch ID', required: false })
   @IsOptional()
-  @IsString()
-  branch_id?: string;
+  @IsNumber()
+  branch_id?: number;
 
   @ApiProperty({
-    example: 'DEPT001',
+    example: 1,
     description: 'Department ID',
     required: false,
   })
   @IsOptional()
-  @IsString()
-  department_id?: string;
+  @IsNumber()
+  department_id?: number;
 
   @ApiProperty({ example: 'John', description: 'First name' })
   @IsNotEmpty()

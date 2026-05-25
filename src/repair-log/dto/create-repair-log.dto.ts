@@ -8,20 +8,20 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateRepairLogDto {
-  @ApiProperty({ example: 'uuid-of-asset' })
-  @IsString()
+  @ApiProperty({ example: 1 })
+  @IsNumber()
   @IsNotEmpty()
-  asset_id: string;
+  asset_id: number;
 
-  @ApiProperty({ example: 'EMP001', required: false })
-  @IsString()
+  @ApiProperty({ example: 1, required: false })
+  @IsNumber()
   @IsOptional()
-  reported_by?: string;
+  reported_by?: number;
 
-  @ApiProperty({ example: 'EMP002', required: false })
-  @IsString()
+  @ApiProperty({ example: 1, required: false })
+  @IsNumber()
   @IsOptional()
-  repaired_by?: string;
+  repaired_by?: number;
 
   @ApiProperty({ example: '2024-03-04T10:00:00Z' })
   @IsDateString()

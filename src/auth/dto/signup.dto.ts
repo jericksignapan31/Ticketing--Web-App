@@ -5,27 +5,28 @@ import {
   IsNotEmpty,
   IsEnum,
   IsOptional,
+  IsNumber,
 } from 'class-validator';
 import { UserRole } from '../../common/enums/user-role.enum';
 
 export class SignupDto {
   @ApiProperty({
     description: 'Branch ID',
-    example: 'br-uuid-here',
+    example: 1,
     required: false,
   })
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  branch_id?: string;
+  branch_id?: number;
 
   @ApiProperty({
     description: 'Department ID',
-    example: 'dept-uuid-here',
+    example: 1,
     required: false,
   })
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  department_id?: string;
+  department_id?: number;
 
   @ApiProperty({
     description: 'First name',

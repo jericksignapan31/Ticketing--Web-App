@@ -11,11 +11,11 @@ import { Employee } from './employee.entity';
 
 @Entity('user_account')
 export class UserAccount {
-  @PrimaryGeneratedColumn('uuid')
-  user_id!: string;
+  @PrimaryGeneratedColumn()
+  user_id!: number;
 
   @Column()
-  employee_id!: string;
+  employee_id!: number;
 
   @Column({ unique: true })
   username!: string;

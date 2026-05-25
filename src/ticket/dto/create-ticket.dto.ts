@@ -1,23 +1,23 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTicketDto {
   @ApiProperty({
-    example: 'EMP001',
+    example: 1,
     description: 'Employee creating the ticket (auto-filled from JWT)',
     required: false,
   })
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  employee_id?: string;
+  employee_id?: number;
 
   @ApiProperty({
-    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    example: 1,
     description: 'Asset that needs repair',
   })
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  asset_id: string;
+  asset_id: number;
 
   @ApiProperty({ example: 'Hardware', description: 'Category of the issue' })
   @IsString()
