@@ -19,7 +19,7 @@ export class RepairLogService {
 
   async findAll(): Promise<RepairLog[]> {
     return await this.repairLogRepository.find({
-      relations: ['asset', 'reporter', 'repairer'],
+      relations: ['asset'],
       order: { repair_date: 'DESC' },
     });
   }
@@ -27,7 +27,7 @@ export class RepairLogService {
   async findOne(repair_log_id: string): Promise<RepairLog> {
     const repairLog = await this.repairLogRepository.findOne({
       where: { repair_log_id },
-      relations: ['asset', 'reporter', 'repairer'],
+      relations: ['asset'],
     });
 
     if (!repairLog) {
@@ -60,7 +60,7 @@ export class RepairLogService {
         { issue_description: Like(`%${query}%`) },
         { action_taken: Like(`%${query}%`) },
       ],
-      relations: ['asset', 'reporter', 'repairer'],
+      relations: ['asset'],
       order: { repair_date: 'DESC' },
     });
   }
@@ -68,7 +68,7 @@ export class RepairLogService {
   async findByAsset(asset_id: string): Promise<RepairLog[]> {
     return await this.repairLogRepository.find({
       where: { asset_id },
-      relations: ['asset', 'reporter', 'repairer'],
+      relations: ['asset'],
       order: { repair_date: 'DESC' },
     });
   }
@@ -76,7 +76,7 @@ export class RepairLogService {
   async findByRepairer(employee_id: string): Promise<RepairLog[]> {
     return await this.repairLogRepository.find({
       where: { repaired_by: employee_id },
-      relations: ['asset', 'reporter', 'repairer'],
+      relations: ['asset'],
       order: { repair_date: 'DESC' },
     });
   }
@@ -84,7 +84,7 @@ export class RepairLogService {
   async findByStatus(status: string): Promise<RepairLog[]> {
     return await this.repairLogRepository.find({
       where: { status },
-      relations: ['asset', 'reporter', 'repairer'],
+      relations: ['asset'],
       order: { repair_date: 'DESC' },
     });
   }

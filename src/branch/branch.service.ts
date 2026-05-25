@@ -82,7 +82,7 @@ export class BranchService {
   async getInventory(branch_id: string): Promise<Branch> {
     const branch = await this.branchRepository.findOne({
       where: { branch_id },
-      relations: ['assets', 'assets.brand', 'assets.assignedEmployee'],
+      relations: ['assets', 'assets.brand'],
     });
 
     if (!branch) {

@@ -66,7 +66,6 @@ export class AssetHistoryService {
     // 2. Get assignments
     const assignments = await this.assignmentHistoryRepository.find({
       where: { asset_id: assetId },
-      relations: ['newEmployee', 'previousEmployee', 'assignedByUser'],
       order: { created_at: 'DESC' },
     });
 
@@ -74,15 +73,11 @@ export class AssetHistoryService {
       ...assignments.map(ah => ({
         id: ah.id,
         type: 'assignment',
-        description: `Assigned to ${ah.newEmployee ? `${ah.newEmployee.first_name} ${ah.newEmployee.last_name}` : 'Unassigned'} (Employee ID: ${ah.new_employee_id || 'N/A'})`,
+        description: `Assigned to Employee ID: ${ah.new_employee_id || 'Unassigned'}`,
         employeeId: ah.new_employee_id,
-        employeeName: ah.newEmployee
-          ? `${ah.newEmployee.first_name} ${ah.newEmployee.last_name}`
-          : null,
-        previousEmployee: ah.previousEmployee
-          ? `${ah.previousEmployee.first_name} ${ah.previousEmployee.last_name}`
-          : null,
-        changedBy: ah.assignedByUser?.email || 'Unknown',
+        employeeName: null,
+        previousEmployee: null,
+        changedBy: 'Unknown',
         changedByRole: 'ADMIN',
         timestamp: ah.created_at.toISOString(),
         details: {
@@ -94,7 +89,6 @@ export class AssetHistoryService {
     // 3. Get repairs
     const repairs = await this.repairLogRepository.find({
       where: { asset_id: assetId },
-      relations: ['repaired_by', 'reported_by'],
       order: { repair_date: 'DESC' },
     });
 

@@ -31,9 +31,6 @@ export class TicketService {
   async findAll(): Promise<Ticket[]> {
     return await this.ticketRepository.find({
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',
@@ -46,9 +43,6 @@ export class TicketService {
     const ticket = await this.ticketRepository.findOne({
       where: { ticket_id },
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',
@@ -85,9 +79,6 @@ export class TicketService {
         { category: Like(`%${query}%`) },
       ],
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',
