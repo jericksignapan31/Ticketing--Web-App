@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Ticket } from '../entities/ticket.entity';
+import { Employee } from '../entities/employee.entity';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { ApproveTicketDto } from './dto/approve-ticket.dto';
@@ -18,18 +19,31 @@ export class TicketService {
   constructor(
     @InjectRepository(Ticket)
     private ticketRepository: Repository<Ticket>,
+    @InjectRepository(Employee)
+    private employeeRepository: Repository<Employee>,
   ) {}
 
   async create(createTicketDto: CreateTicketDto): Promise<Ticket> {
+    // Get the employee's department
+    const employee = await this.employeeRepository.findOne({
+      where: { employee_id: createTicketDto.employee_id },
+    });
+
     const ticket = this.ticketRepository.create(createTicketDto);
+    
+    // Auto-populate department_id from employee's department
+    if (employee && employee.department_id) {
+      ticket.department_id = employee.department_id;
+    }
+
     const savedTicket = await this.ticketRepository.save(ticket);
 
     // Return ticket with all relations loaded
     return await this.findOne(savedTicket.ticket_id);
   }
 
-  async findAll(): Promise<Ticket[]> {
-    return await this.ticketRepository.find({
+  async findAll(departmentId?: string): Promise<Ticket[]> {
+    const query = this.ticketRepository.find({
       relations: [
         'asset',
         'asset.brand',
@@ -37,6 +51,21 @@ export class TicketService {
       ],
       order: { created_at: 'DESC' },
     });
+
+    // Apply department filter if provided
+    if (departmentId) {
+      return await this.ticketRepository.find({
+        where: { department_id: departmentId },
+        relations: [
+          'asset',
+          'asset.brand',
+          'asset.branch',
+        ],
+        order: { created_at: 'DESC' },
+      });
+    }
+
+    return await query;
   }
 
   async findOne(ticket_id: string): Promise<Ticket> {
@@ -215,13 +244,16 @@ export class TicketService {
     return await this.ticketRepository.save(ticket);
   }
 
-  async findPendingApprovals(): Promise<Ticket[]> {
+  async findPendingApprovals(departmentId?: string): Promise<Ticket[]> {
+    const where: any = { approval_status: 'pending' };
+    
+    if (departmentId) {
+      where.department_id = departmentId;
+    }
+
     return await this.ticketRepository.find({
-      where: { approval_status: 'pending' },
+      where,
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',

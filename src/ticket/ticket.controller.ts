@@ -47,9 +47,9 @@ export class TicketController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all tickets' })
-  findAll() {
-    return this.ticketService.findAll();
+  @ApiOperation({ summary: 'Get all tickets (optionally filter by department_id)' })
+  findAll(@Query('department_id') departmentId?: string) {
+    return this.ticketService.findAll(departmentId);
   }
 
   @Get('search')
@@ -93,13 +93,13 @@ export class TicketController {
   @Get('pending-approvals')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERVISOR, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Get all tickets pending approval' })
+  @ApiOperation({ summary: 'Get all tickets pending approval (optionally filter by department_id)' })
   @ApiResponse({
     status: 200,
     description: 'Returns all tickets pending supervisor approval',
   })
-  findPendingApprovals() {
-    return this.ticketService.findPendingApprovals();
+  findPendingApprovals(@Query('department_id') departmentId?: string) {
+    return this.ticketService.findPendingApprovals(departmentId);
   }
 
   @Get('approval-status/:status')

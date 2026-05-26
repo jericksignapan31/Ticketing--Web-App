@@ -19,6 +19,9 @@ export class Ticket {
   employee_id!: string;
 
   @Column({ nullable: true })
+  department_id?: string;
+
+  @Column({ nullable: true })
   asset_id?: string;
 
   @Column({ nullable: true })
