@@ -13,6 +13,7 @@ import { ApproveTicketDto } from './dto/approve-ticket.dto';
 import { RejectTicketDto } from './dto/reject-ticket.dto';
 import { StartWorkDto } from './dto/start-work.dto';
 import { CompleteTicketDto } from './dto/complete-ticket.dto';
+import { TicketPartsService } from './ticket-parts.service';
 import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
@@ -22,6 +23,7 @@ export class TicketService {
     private ticketRepository: Repository<Ticket>,
     @InjectRepository(Employee)
     private employeeRepository: Repository<Employee>,
+    private ticketPartsService: TicketPartsService,
   ) {}
 
   /**
@@ -483,6 +485,20 @@ export class TicketService {
     if (ticket.assigned_to && ticket.assigned_to !== it_staff_id) {
       throw new BadRequestException(
         `You are not assigned to this ticket. Assigned to: ${ticket.assigned_to}`,
+      );
+    }
+
+    // Validate all parts are received (if any parts were requested)
+    const allPartsReceived = await this.ticketPartsService.checkAllPartsReceived(
+      ticket_id,
+    );
+    if (!allPartsReceived) {
+      const pendingParts = await this.ticketPartsService.getPendingParts(
+        ticket_id,
+      );
+      throw new BadRequestException(
+        `Cannot complete ticket. ${pendingParts.length} part(s) still pending or not received. ` +
+        'Please confirm all parts are received first using /tickets/:id/parts/:part_id endpoint.',
       );
     }
 

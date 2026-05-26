@@ -3,12 +3,14 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Employee } from './employee.entity';
 import { Asset } from './asset.entity';
+import { TicketParts } from './ticket-parts.entity';
 
 @Entity('ticket')
 export class Ticket {
@@ -80,6 +82,9 @@ export class Ticket {
 
   @Column({ type: 'text', nullable: true })
   resolution_notes?: string;
+
+  @OneToMany(() => TicketParts, (parts) => parts.ticket, { cascade: true })
+  parts?: TicketParts[];
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'employee_id' })

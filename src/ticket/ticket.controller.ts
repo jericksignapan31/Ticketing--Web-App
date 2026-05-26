@@ -23,18 +23,24 @@ import { ApproveTicketDto } from './dto/approve-ticket.dto';
 import { RejectTicketDto } from './dto/reject-ticket.dto';
 import { StartWorkDto } from './dto/start-work.dto';
 import { CompleteTicketDto } from './dto/complete-ticket.dto';
+import { CreateTicketPartsDto } from './dto/create-ticket-parts.dto';
+import { UpdateTicketPartsDto } from './dto/update-ticket-parts.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
+import { TicketPartsService } from './ticket-parts.service';
 
 @ApiTags('tickets')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('tickets')
 export class TicketController {
-  constructor(private readonly ticketService: TicketService) {}
+  constructor(
+    private readonly ticketService: TicketService,
+    private readonly ticketPartsService: TicketPartsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new repair request ticket' })
@@ -280,5 +286,59 @@ export class TicketController {
   @ApiOperation({ summary: 'Delete a ticket' })
   remove(@Param('id') id: string) {
     return this.ticketService.remove(id);
+  }
+
+  // ============ PARTS MANAGEMENT ENDPOINTS ============
+
+  @Get(':id/parts')
+  @ApiOperation({ summary: 'Get all parts requested for a ticket' })
+  @ApiParam({ name: 'id', description: 'Ticket ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all parts for the ticket',
+  })
+  getTicketParts(@Param('id') ticket_id: string) {
+    return this.ticketPartsService.findAllPartsForTicket(ticket_id);
+  }
+
+  @Post(':id/parts')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Request parts for a ticket (IT Staff only)' })
+  @ApiParam({ name: 'id', description: 'Ticket ID' })
+  @ApiResponse({ status: 201, description: 'Part request created' })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  createPart(
+    @Param('id') ticket_id: string,
+    @Body() createTicketPartsDto: CreateTicketPartsDto,
+  ) {
+    return this.ticketPartsService.createPart(ticket_id, createTicketPartsDto);
+  }
+
+  @Patch(':id/parts/:part_id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update part status (IT Staff only)' })
+  @ApiParam({ name: 'id', description: 'Ticket ID' })
+  @ApiParam({ name: 'part_id', description: 'Part ID' })
+  @ApiResponse({ status: 200, description: 'Part updated' })
+  @ApiResponse({ status: 404, description: 'Part not found' })
+  updatePart(
+    @Param('part_id') part_id: string,
+    @Body() updateTicketPartsDto: UpdateTicketPartsDto,
+  ) {
+    return this.ticketPartsService.updatePart(part_id, updateTicketPartsDto);
+  }
+
+  @Delete(':id/parts/:part_id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete a part request (IT Staff only)' })
+  @ApiParam({ name: 'id', description: 'Ticket ID' })
+  @ApiParam({ name: 'part_id', description: 'Part ID' })
+  @ApiResponse({ status: 200, description: 'Part deleted' })
+  @ApiResponse({ status: 404, description: 'Part not found' })
+  deletePart(@Param('part_id') part_id: string) {
+    return this.ticketPartsService.deletePart(part_id);
   }
 }
