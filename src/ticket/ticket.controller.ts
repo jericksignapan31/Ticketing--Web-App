@@ -56,8 +56,8 @@ export class TicketController {
   @ApiOperation({
     summary: 'Search tickets by subject, description, or category',
   })
-  search(@Query('q') query: string) {
-    return this.ticketService.search(query);
+  search(@Query('q') query: string, @Query('department_id') departmentId?: string) {
+    return this.ticketService.search(query, departmentId);
   }
 
   @Get('reporter/:employee_id')
@@ -73,21 +73,21 @@ export class TicketController {
   }
 
   @Get('status/:status')
-  @ApiOperation({ summary: 'Get tickets by status' })
-  findByStatus(@Param('status') status: string) {
-    return this.ticketService.findByStatus(status);
+  @ApiOperation({ summary: 'Get tickets by status (optionally filter by department_id)' })
+  findByStatus(@Param('status') status: string, @Query('department_id') departmentId?: string) {
+    return this.ticketService.findByStatus(status, departmentId);
   }
 
   @Get('priority/:priority')
-  @ApiOperation({ summary: 'Get tickets by priority' })
-  findByPriority(@Param('priority') priority: string) {
-    return this.ticketService.findByPriority(priority);
+  @ApiOperation({ summary: 'Get tickets by priority (optionally filter by department_id)' })
+  findByPriority(@Param('priority') priority: string, @Query('department_id') departmentId?: string) {
+    return this.ticketService.findByPriority(priority, departmentId);
   }
 
   @Get('category/:category')
-  @ApiOperation({ summary: 'Get tickets by category' })
-  findByCategory(@Param('category') category: string) {
-    return this.ticketService.findByCategory(category);
+  @ApiOperation({ summary: 'Get tickets by category (optionally filter by department_id)' })
+  findByCategory(@Param('category') category: string, @Query('department_id') departmentId?: string) {
+    return this.ticketService.findByCategory(category, departmentId);
   }
 
   @Get('pending-approvals')
@@ -105,14 +105,14 @@ export class TicketController {
   @Get('approval-status/:status')
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERVISOR, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Get tickets by approval status' })
+  @ApiOperation({ summary: 'Get tickets by approval status (optionally filter by department_id)' })
   @ApiParam({ name: 'status', enum: ['pending', 'approved', 'rejected'] })
   @ApiResponse({
     status: 200,
     description: 'Returns tickets with specified approval status',
   })
-  findByApprovalStatus(@Param('status') status: string) {
-    return this.ticketService.findByApprovalStatus(status);
+  findByApprovalStatus(@Param('status') status: string, @Query('department_id') departmentId?: string) {
+    return this.ticketService.findByApprovalStatus(status, departmentId);
   }
 
   @Patch(':id/approve')

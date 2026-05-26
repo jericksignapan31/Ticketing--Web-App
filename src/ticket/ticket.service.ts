@@ -100,13 +100,21 @@ export class TicketService {
     await this.ticketRepository.remove(ticket);
   }
 
-  async search(query: string): Promise<Ticket[]> {
+  async search(query: string, departmentId?: string): Promise<Ticket[]> {
+    const where: any[] = [
+      { subject: Like(`%${query}%`) },
+      { description: Like(`%${query}%`) },
+      { category: Like(`%${query}%`) },
+    ];
+
+    if (departmentId) {
+      where.forEach(condition => {
+        condition.department_id = departmentId;
+      });
+    }
+
     return await this.ticketRepository.find({
-      where: [
-        { subject: Like(`%${query}%`) },
-        { description: Like(`%${query}%`) },
-        { category: Like(`%${query}%`) },
-      ],
+      where,
       relations: [
         'asset',
         'asset.brand',
@@ -120,9 +128,6 @@ export class TicketService {
     return await this.ticketRepository.find({
       where: { employee_id },
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',
@@ -135,9 +140,6 @@ export class TicketService {
     return await this.ticketRepository.find({
       where: { assigned_to: employee_id },
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',
@@ -146,13 +148,16 @@ export class TicketService {
     });
   }
 
-  async findByStatus(status: string): Promise<Ticket[]> {
+  async findByStatus(status: string, departmentId?: string): Promise<Ticket[]> {
+    const where: any = { status };
+    
+    if (departmentId) {
+      where.department_id = departmentId;
+    }
+
     return await this.ticketRepository.find({
-      where: { status },
+      where,
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',
@@ -161,13 +166,16 @@ export class TicketService {
     });
   }
 
-  async findByPriority(priority: string): Promise<Ticket[]> {
+  async findByPriority(priority: string, departmentId?: string): Promise<Ticket[]> {
+    const where: any = { priority };
+    
+    if (departmentId) {
+      where.department_id = departmentId;
+    }
+
     return await this.ticketRepository.find({
-      where: { priority },
+      where,
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',
@@ -176,13 +184,16 @@ export class TicketService {
     });
   }
 
-  async findByCategory(category: string): Promise<Ticket[]> {
+  async findByCategory(category: string, departmentId?: string): Promise<Ticket[]> {
+    const where: any = { category };
+    
+    if (departmentId) {
+      where.department_id = departmentId;
+    }
+
     return await this.ticketRepository.find({
-      where: { category },
+      where,
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',
@@ -262,13 +273,16 @@ export class TicketService {
     });
   }
 
-  async findByApprovalStatus(approval_status: string): Promise<Ticket[]> {
+  async findByApprovalStatus(approval_status: string, departmentId?: string): Promise<Ticket[]> {
+    const where: any = { approval_status };
+    
+    if (departmentId) {
+      where.department_id = departmentId;
+    }
+
     return await this.ticketRepository.find({
-      where: { approval_status },
+      where,
       relations: [
-        'reporter',
-        'assignedEmployee',
-        'approver',
         'asset',
         'asset.brand',
         'asset.branch',
