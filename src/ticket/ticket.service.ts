@@ -226,7 +226,7 @@ export class TicketService {
   // Specific status endpoints for frontend
   async findPending(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'pending' };
+    const where: any = { status: 'pending_approval' };
     
     if (departmentFilter) {
       where.department_id = departmentFilter;
@@ -264,7 +264,7 @@ export class TicketService {
 
   async findCompleted(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'completed' };
+    const where: any = { status: 'resolved' };
     
     if (departmentFilter) {
       where.department_id = departmentFilter;
@@ -284,6 +284,44 @@ export class TicketService {
   async findApproved(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
     const where: any = { status: 'approved' };
+    
+    if (departmentFilter) {
+      where.department_id = departmentFilter;
+    }
+
+    return await this.ticketRepository.find({
+      where,
+      relations: [
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findAssigned(user: any): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const where: any = { status: 'assigned' };
+    
+    if (departmentFilter) {
+      where.department_id = departmentFilter;
+    }
+
+    return await this.ticketRepository.find({
+      where,
+      relations: [
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findRejected(user: any): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const where: any = { status: 'rejected' };
     
     if (departmentFilter) {
       where.department_id = departmentFilter;

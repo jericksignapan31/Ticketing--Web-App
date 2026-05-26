@@ -91,10 +91,10 @@ export class TicketController {
   }
 
   @Get('pending')
-  @ApiOperation({ summary: 'Get all pending tickets (filtered by department for employee/supervisor)' })
+  @ApiOperation({ summary: 'Get all pending approval tickets (status: pending_approval, filtered by department)' })
   @ApiResponse({
     status: 200,
-    description: 'Returns all tickets with pending status',
+    description: 'Returns all tickets with pending_approval status',
   })
   findPending(@CurrentUser() user: any) {
     return this.ticketService.findPending(user);
@@ -111,23 +111,43 @@ export class TicketController {
   }
 
   @Get('completed')
-  @ApiOperation({ summary: 'Get all completed tickets (filtered by department for employee/supervisor)' })
+  @ApiOperation({ summary: 'Get all resolved/completed tickets (status: resolved, filtered by department)' })
   @ApiResponse({
     status: 200,
-    description: 'Returns all tickets with completed status',
+    description: 'Returns all tickets with resolved status',
   })
   findCompleted(@CurrentUser() user: any) {
     return this.ticketService.findCompleted(user);
   }
 
   @Get('approved')
-  @ApiOperation({ summary: 'Get all approved tickets (filtered by department for employee/supervisor)' })
+  @ApiOperation({ summary: 'Get all approved tickets (status: approved, filtered by department)' })
   @ApiResponse({
     status: 200,
     description: 'Returns all tickets with approved status',
   })
   findApproved(@CurrentUser() user: any) {
     return this.ticketService.findApproved(user);
+  }
+
+  @Get('assigned')
+  @ApiOperation({ summary: 'Get all assigned tickets (status: assigned, filtered by department)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all tickets with assigned status',
+  })
+  findAssigned(@CurrentUser() user: any) {
+    return this.ticketService.findAssigned(user);
+  }
+
+  @Get('rejected')
+  @ApiOperation({ summary: 'Get all rejected tickets (status: rejected, filtered by department)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all tickets with rejected status',
+  })
+  findRejected(@CurrentUser() user: any) {
+    return this.ticketService.findRejected(user);
   }
 
   @Get('pending-approvals')
