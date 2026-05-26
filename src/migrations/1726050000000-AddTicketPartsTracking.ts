@@ -6,7 +6,7 @@ import {
   TableForeignKey,
 } from 'typeorm';
 
-export class AddTicketPartsTracking1726050000 implements MigrationInterface {
+export class AddTicketPartsTracking1726050000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const table = await queryRunner.getTable('ticket');
 
