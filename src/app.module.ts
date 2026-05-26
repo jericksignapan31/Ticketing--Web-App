@@ -12,6 +12,7 @@ import { Department } from './entities/department.entity';
 import { Brand } from './entities/brand.entity';
 import { Asset } from './entities/asset.entity';
 import { Ticket } from './entities/ticket.entity';
+import { TicketParts } from './entities/ticket-parts.entity';
 import { RepairLog } from './entities/repair-log.entity';
 import { AssetStatusHistory } from './entities/asset-status-history.entity';
 import { AssetAssignmentHistory } from './entities/asset-assignment-history.entity';
@@ -60,6 +61,7 @@ import { ChatModule } from './chat/chat.module';
           Brand,
           Asset,
           Ticket,
+          TicketParts,
           RepairLog,
           AssetStatusHistory,
           AssetAssignmentHistory,
