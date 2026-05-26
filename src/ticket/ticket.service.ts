@@ -488,23 +488,33 @@ export class TicketService {
       );
     }
 
-    // Validate all parts are received (if any parts were requested)
-    const allPartsReceived = await this.ticketPartsService.checkAllPartsReceived(
-      ticket_id,
-    );
-    if (!allPartsReceived) {
-      const pendingParts = await this.ticketPartsService.getPendingParts(
+    // Check if parts need to be purchased
+    const needsBuyParts = completeTicketDto.unit_status === 'need_buy_parts';
+
+    if (needsBuyParts) {
+      // If parts need to be bought, set status to waiting_for_parts
+      ticket.status = 'waiting_for_parts';
+    } else {
+      // Otherwise, validate all parts are received (if any parts were requested)
+      const allPartsReceived = await this.ticketPartsService.checkAllPartsReceived(
         ticket_id,
       );
-      throw new BadRequestException(
-        `Cannot complete ticket. ${pendingParts.length} part(s) still pending or not received. ` +
-        'Please confirm all parts are received first using /tickets/:id/parts/:part_id endpoint.',
-      );
+      if (!allPartsReceived) {
+        const pendingParts = await this.ticketPartsService.getPendingParts(
+          ticket_id,
+        );
+        throw new BadRequestException(
+          `Cannot complete ticket. ${pendingParts.length} part(s) still pending or not received. ` +
+          'Please confirm all parts are received first using /tickets/:id/parts/:part_id endpoint.',
+        );
+      }
+
+      // Set status to resolved
+      ticket.status = 'resolved';
+      ticket.resolved_at = new Date();
     }
 
     // Update ticket with resolution details
-    ticket.status = 'resolved';
-    ticket.resolved_at = new Date();
     ticket.unit_status = completeTicketDto.unit_status;
     ticket.observation = completeTicketDto.observation;
     ticket.action_taken = completeTicketDto.action_taken;

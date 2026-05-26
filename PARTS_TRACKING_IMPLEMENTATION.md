@@ -1,7 +1,99 @@
 # Parts Tracking System - Implementation Guide for Frontend
 
 ## Overview
-A complete parts/inventory tracking system has been implemented for IT tickets. IT staff can now request parts for repairs, track their status, and cannot complete a ticket until all parts are received.
+A complete parts/inventory tracking system has been implemented for IT tickets. When IT staff encounters a ticket that needs replacement parts, they can mark it as "need_buy_parts" during completion, which prevents the ticket from being marked as resolved and instead sets its status to "waiting_for_parts". Parts can then be tracked through their lifecycle.
+
+---
+
+## Ticket Status Flow with Parts
+
+```
+pending_approval → approved → assigned → in_progress
+                                            ↓
+                                    (IT completes ticket)
+                                            ↓
+                    ┌─────────────────────────────────┐
+                    │    Complete Modal Appears       │
+                    │  Choose Unit Status:            │
+                    │  • working                      │
+                    │  • not_working                  │
+                    │  • partially_working            │
+                    │  • need_buy_parts ← PARTS FLOW  │
+                    └─────────────────────────────────┘
+                                    ↓
+                ┌───────────────────┴──────────────────┐
+                ↓                                      ↓
+        [working/not_working/       [need_buy_parts]
+         partially_working]
+                ↓                      ↓
+            resolved          waiting_for_parts
+                               (Request parts here)
+                                    ↓
+                          (Parts marked received)
+                                    ↓
+                          Resume work or mark as
+                          working → resolved
+```
+
+---
+
+## Complete Ticket Endpoint - Updated
+
+### Mark Ticket as Complete
+```
+PATCH /tickets/:ticket_id/complete
+```
+
+**Authentication:** Requires IT or ADMIN role
+
+**Request Body (Modal Form):**
+```json
+{
+  "unit_status": "need_buy_parts",
+  "observation": "Keyboard completely broken, need replacement",
+  "action_taken": "Diagnostics completed - keyboard not repairable",
+  "recommendation": "Purchase new mechanical keyboard",
+  "resolution_notes": "Waiting for parts approval"
+}
+```
+
+**Unit Status Options:**
+- `working` → Ticket status: **resolved**
+- `not_working` → Ticket status: **resolved**
+- `partially_working` → Ticket status: **resolved**
+- `need_buy_parts` → Ticket status: **waiting_for_parts** ⚠️
+
+**Response with "need_buy_parts":**
+```json
+{
+  "ticket_id": "ticket-789",
+  "status": "waiting_for_parts",
+  "resolved_at": null,
+  "unit_status": "need_buy_parts",
+  "observation": "Keyboard completely broken, need replacement",
+  "action_taken": "Diagnostics completed - keyboard not repairable",
+  "recommendation": "Purchase new mechanical keyboard",
+  "resolution_notes": "Waiting for parts approval",
+  "created_at": "2026-05-26T10:00:00Z",
+  "updated_at": "2026-05-26T15:30:00Z"
+}
+```
+
+**Response with other unit status (e.g., "working"):**
+```json
+{
+  "ticket_id": "ticket-789",
+  "status": "resolved",
+  "resolved_at": "2026-05-26T15:30:00Z",
+  "unit_status": "working",
+  "observation": "Fixed keyboard driver issue",
+  "action_taken": "Reinstalled drivers",
+  "recommendation": "Schedule monthly maintenance",
+  "resolution_notes": "Ticket resolved successfully",
+  "created_at": "2026-05-26T10:00:00Z",
+  "updated_at": "2026-05-26T15:30:00Z"
+}
+```
 
 ---
 
@@ -32,6 +124,48 @@ ticket_parts
 ---
 
 ## New API Endpoints
+
+### 0. **Complete Ticket with Unit Status Modal** (UPDATED)
+```
+PATCH /tickets/:ticket_id/complete
+```
+
+**Authentication:** Requires IT or ADMIN role
+
+**NEW: Unit Status "need_buy_parts" Option**
+
+When IT staff selects "need_buy_parts" in the completion modal:
+- Ticket does **NOT** get marked as resolved
+- Ticket status becomes **"waiting_for_parts"** instead
+- This allows requesting and tracking parts without completing the ticket
+
+**Response (Normal completion - unit_status = "working"):**
+```json
+{
+  "ticket_id": "ticket-789",
+  "status": "resolved",
+  "resolved_at": "2026-05-26T15:30:00Z",
+  "unit_status": "working",
+  "observation": "...",
+  "action_taken": "...",
+  ...
+}
+```
+
+**Response (Parts needed - unit_status = "need_buy_parts"):**
+```json
+{
+  "ticket_id": "ticket-789",
+  "status": "waiting_for_parts",
+  "resolved_at": null,
+  "unit_status": "need_buy_parts",
+  "observation": "Keyboard broken",
+  "action_taken": "Diagnostics completed",
+  ...
+}
+```
+
+---
 
 ### 1. **Get All Parts for a Ticket**
 ```
@@ -187,43 +321,11 @@ Success - Part request deleted
 
 ---
 
-## Updated Ticket Completion Endpoint
-
-### Complete Ticket with Parts Validation
-```
-PATCH /tickets/:ticket_id/complete
-```
-
-**NEW VALIDATION:**
-- Cannot complete a ticket if any parts are still pending or not received
-- Error message will list how many parts are pending
-
-**Error Response (400):**
-```json
-{
-  "statusCode": 400,
-  "message": "Cannot complete ticket. 2 part(s) still pending or not received. Please confirm all parts are received first using /tickets/:id/parts/:part_id endpoint."
-}
-```
-
-**Success Response (200):**
-```json
-{
-  "ticket_id": "ticket-789",
-  "status": "resolved",
-  "resolved_at": "2026-05-26T17:00:00Z",
-  "unit_status": "working",
-  "observation": "...",
-  "action_taken": "...",
-  ...
-}
-```
-
 ---
 
 ## Complete Workflow Example
 
-### Scenario: IT Staff Repairs a Laptop
+### Scenario: IT Staff Repairs a Laptop (Needs Parts)
 
 **Step 1: Start Working**
 ```
@@ -234,46 +336,123 @@ PATCH /tickets/ticket-123/start-work
 → Status changes to "in_progress"
 ```
 
-**Step 2: Find Parts Needed**
+**Step 2: Diagnose Issue (During Work)**
 ```
-PATCH /tickets/ticket-123/parts
+During repair process, IT realizes keyboard is broken and needs replacement
+```
+
+**Step 3: Click "Complete" Button - Modal Appears**
+```
+User fills modal with:
+- Unit Status: "need_buy_parts" ← SELECT THIS
+- Observation: "Keyboard completely broken"
+- Action Taken: "Diagnostics completed"
+- Recommendation: "Purchase mechanical keyboard"
+- Additional Notes: "Waiting for approval"
+```
+
+**Step 4: Submit Modal - Ticket Status Changes**
+```
+PATCH /tickets/ticket-123/complete
 {
-  "part_name": "Keyboard",
+  "unit_status": "need_buy_parts",
+  "observation": "Keyboard completely broken",
+  "action_taken": "Diagnostics completed",
+  "recommendation": "Purchase mechanical keyboard",
+  "resolution_notes": "Waiting for approval"
+}
+→ Status changes to "waiting_for_parts" (NOT resolved)
+→ resolved_at is NOT set
+```
+
+**Step 5: Request Parts**
+```
+POST /tickets/ticket-123/parts
+{
+  "part_name": "Mechanical Keyboard",
   "quantity": 1,
   "unit_cost": 1500,
-  "supplier": "Lazada"
+  "supplier": "Local Computer Store",
+  "notes": "RGB backlit"
 }
-→ Status = "pending"
+→ Part created with status "pending"
 ```
 
-**Step 3: Check Ordered Status**
+**Step 6: Update Part Status as It Progresses**
 ```
-PATCH /tickets/ticket-123/parts/part-abc/status
+PATCH /tickets/ticket-123/parts/part-abc
 {
-  "status": "ordered"
+  "status": "ordered",
+  "notes": "Ordered from supplier"
 }
 ```
 
-**Step 4: Parts Received**
+**Step 7: Parts Received**
 ```
-PATCH /tickets/ticket-123/parts/part-abc/status
+PATCH /tickets/ticket-123/parts/part-abc
 {
   "status": "received",
-  "notes": "Received and tested"
+  "notes": "Parts received and verified"
 }
 → received_date is auto-set
 ```
 
-**Step 5: Complete Ticket (After All Parts Received)**
+**Step 8: After Parts Received - Resume Work or Mark Complete**
+Option A: Go back to in_progress and continue work
+```
+PATCH /tickets/ticket-123/start-work
+{
+  "notes": "Resuming work - parts arrived"
+}
+→ Status back to "in_progress"
+```
+
+Option B: Or mark as completed again (this time with final unit status)
 ```
 PATCH /tickets/ticket-123/complete
 {
   "unit_status": "working",
-  "observation": "Keyboard was broken",
-  "action_taken": "Replaced keyboard"
+  "observation": "Replaced broken keyboard",
+  "action_taken": "Keyboard replacement completed",
+  "recommendation": "Parts will last 3 years",
+  "resolution_notes": "Ticket resolved successfully"
 }
-→ Only works if all parts status = "received"
 → Status changes to "resolved"
+→ resolved_at is set
+```
+
+---
+
+### Scenario: IT Staff Repairs a Laptop (No Parts Needed)
+
+**Step 1: Start Working**
+```
+PATCH /tickets/ticket-456/start-work
+{
+  "notes": "Starting repair"
+}
+→ Status = "in_progress"
+```
+
+**Step 2: Complete Repair**
+```
+Issue was just software - fixed driver problem
+```
+
+**Step 3: Click "Complete" Button - Modal Appears with Fields**
+
+**Step 4: Submit Modal (NO parts needed)**
+```
+PATCH /tickets/ticket-456/complete
+{
+  "unit_status": "working",
+  "observation": "Driver corruption detected",
+  "action_taken": "Reinstalled network drivers",
+  "recommendation": "Update drivers monthly",
+  "resolution_notes": "Ticket resolved successfully"
+}
+→ Status changes to "resolved"
+→ resolved_at is set immediately
 ```
 
 ---
@@ -281,32 +460,54 @@ PATCH /tickets/ticket-123/complete
 ## Frontend Implementation Checklist
 
 ### Ticket Detail View Updates
-- [ ] Display parts list/table for the ticket
-- [ ] Show total parts cost
-- [ ] Show parts status indicators (pending/ordered/received)
+- [ ] Only IT staff can see "Complete" button
+- [ ] "Complete" button only enabled when ticket is "in_progress"
 
-### Parts Management UI
-- [ ] Add "Request Parts" button/form
-- [ ] Form fields: part_name, quantity, unit_cost, supplier, notes
-- [ ] Auto-calculate total_cost on submit
-- [ ] Display validation errors
+### Complete Ticket Modal Form
+- [ ] Show modal with 5 required fields:
+  - [ ] **Unit Status** (dropdown): working, not_working, partially_working, need_buy_parts
+  - [ ] **Observation** (text area): What was observed
+  - [ ] **Action Taken** (text area): What was done to fix
+  - [ ] **Recommendation** (text area - optional): Suggestions for future
+  - [ ] **Additional Notes** (text area - optional): Any other notes
+- [ ] Validation: Unit Status, Observation, Action Taken are required
+- [ ] When Unit Status = "need_buy_parts", show special note: "This will mark ticket as 'waiting for parts' - you can request parts after submitting"
 
-### Parts Status Management
-- [ ] Show parts list with status dropdown
-- [ ] Ability to change status: pending → ordered → received
-- [ ] Add/update notes field
+### Smart Unit Status Handling
+- [ ] If Unit Status = "need_buy_parts":
+  - [ ] Submit endpoint → ticket status becomes "waiting_for_parts"
+  - [ ] Show success: "Ticket waiting for parts. You can now request parts."
+  - [ ] Display parts management interface
+- [ ] If Unit Status = working/not_working/partially_working:
+  - [ ] Submit endpoint → ticket status becomes "resolved"
+  - [ ] Show success: "Ticket completed successfully"
+  - [ ] Hide parts management interface
+
+### Parts Management Interface (Only when status = "waiting_for_parts")
+- [ ] Display current parts list (if any)
+- [ ] Add "Request Parts" button/form with fields:
+  - [ ] part_name (required)
+  - [ ] quantity (required, number > 0)
+  - [ ] unit_cost (required, number > 0)
+  - [ ] supplier (required)
+  - [ ] notes (optional)
+- [ ] Show auto-calculated total_cost
+- [ ] Parts list with columns: part_name, quantity, unit_cost, total_cost, status, actions
+- [ ] Status dropdown for each part: pending → ordered → received
 - [ ] Delete part button (with confirmation)
+- [ ] When all parts status = "received", show info: "All parts received. You can now resume work or mark as complete."
 
-### Completion Flow Changes
-- [ ] Before allowing completion, check if parts are pending
-- [ ] Show error: "Cannot complete - X parts pending"
-- [ ] Only enable complete button if all parts received
-- [ ] Show parts summary before completion
+### Ticket Status Display
+- [ ] Show current status clearly:
+  - [ ] "resolved" - ticket is done
+  - [ ] "waiting_for_parts" - ticket pending parts, show parts section
+  - [ ] "in_progress" - show complete button
+- [ ] Add badge/indicator for "waiting_for_parts" status
 
-### Dashboard/Reports
-- [ ] Add filter: "Tickets Waiting for Parts"
-- [ ] Show total parts cost per ticket
-- [ ] Show pending parts across all tickets
+### Dashboard/Reports (Optional Enhancements)
+- [ ] Filter: "Waiting for Parts" (status = waiting_for_parts)
+- [ ] Show parts cost summary
+- [ ] Show pending parts count
 
 ---
 
@@ -342,16 +543,36 @@ PATCH /tickets/ticket-123/complete
 
 ## Key Business Rules
 
+✅ **Ticket Completion Rules:**
+1. Only IT staff can mark tickets as complete
+2. When completing, IT must select a unit status (working, not_working, partially_working, or need_buy_parts)
+3. If "need_buy_parts" is selected:
+   - Ticket status becomes "waiting_for_parts" (NOT resolved)
+   - resolved_at date is NOT set
+   - IT can then request parts through parts endpoints
+4. If any other unit status is selected:
+   - Ticket status becomes "resolved"
+   - resolved_at date is set to current time
+   - No parts validation needed
+
 ✅ **Parts Tracking Rules:**
-1. Only IT staff can request parts
-2. Cannot complete ticket until all parts are received
-3. Parts are automatically deleted when ticket is deleted
-4. Total cost auto-calculates from quantity × unit_cost
-5. received_date auto-sets when status changes to "received"
+1. Parts can only be requested for tickets in "waiting_for_parts" status
+2. Only IT staff can manage parts
+3. Each part has status: pending → ordered → received
+4. received_date auto-sets when status changes to "received"
+5. Parts are automatically deleted when ticket is deleted
 
 ✅ **Status Flow:**
 ```
-pending → ordered → received
+pending_approval
+    ↓
+approved
+    ↓
+assigned
+    ↓
+in_progress
+    ↓ (IT clicks Complete)
+waiting_for_parts (if need_buy_parts) OR resolved (if working/not_working/etc)
 ```
 
 ---
