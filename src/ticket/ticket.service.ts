@@ -342,7 +342,7 @@ export class TicketService {
 
   async findWaitingForParts(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'waiting_for_parts' };
+    const where: any = { status: 'hold' };
     
     if (departmentFilter) {
       where.department_id = departmentFilter;
@@ -529,11 +529,11 @@ export class TicketService {
     console.log('🔍 DEBUG: completeTicket');
     console.log('  unit_status:', completeTicketDto.unit_status);
     console.log('  needsBuyParts:', needsBuyParts);
-    console.log('  Will set status to:', needsBuyParts ? 'waiting_for_parts' : 'resolved');
+    console.log('  Will set status to:', needsBuyParts ? 'hold' : 'resolved');
 
     if (needsBuyParts) {
-      // If parts need to be bought, set status to waiting_for_parts
-      ticket.status = 'waiting_for_parts';
+      // If parts need to be bought, set status to hold
+      ticket.status = 'hold';
     } else {
       // Otherwise, validate all parts are received (if any parts were requested)
       const allPartsReceived = await this.ticketPartsService.checkAllPartsReceived(

@@ -5,7 +5,7 @@ export class CompleteTicketDto {
   @ApiProperty({
     example: 'working',
     description:
-      'Status of the unit after repair: working, not_working, partially_working, need_buy_parts (optional - if needs parts, ticket goes to waiting_for_parts)',
+      'Status of the unit after repair: working, not_working, partially_working, need_buy_parts (optional - if needs parts, ticket goes to hold status)',
     enum: ['working', 'not_working', 'partially_working', 'need_buy_parts'],
   })
   @IsString()

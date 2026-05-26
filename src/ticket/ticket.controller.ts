@@ -156,11 +156,21 @@ export class TicketController {
     return this.ticketService.findRejected(user);
   }
 
-  @Get('waiting-for-parts')
-  @ApiOperation({ summary: 'Get all tickets waiting for parts (status: waiting_for_parts, filtered by department)' })
+  @Get('hold')
+  @ApiOperation({ summary: 'Get all on-hold tickets (status: hold, filtered by department) - tickets waiting for parts' })
   @ApiResponse({
     status: 200,
-    description: 'Returns all tickets waiting for parts with parts list',
+    description: 'Returns all tickets on hold (waiting for parts)',
+  })
+  findHold(@CurrentUser() user: any) {
+    return this.ticketService.findWaitingForParts(user);
+  }
+
+  @Get('waiting-for-parts')
+  @ApiOperation({ summary: 'Get all tickets on hold for parts (status: hold, filtered by department)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all hold tickets with their parts',
   })
   findWaitingForParts(@CurrentUser() user: any) {
     return this.ticketService.findWaitingForParts(user);
