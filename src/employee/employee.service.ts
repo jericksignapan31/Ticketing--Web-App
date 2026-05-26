@@ -209,7 +209,23 @@ export class EmployeeService {
 
   async remove(employee_id: string): Promise<void> {
     const employee = await this.findOne(employee_id);
+
+    // Delete user account first (FK constraint)
+    await this.userAccountRepository.delete({
+      employee_id: employee_id,
+    });
+
+    // Delete related assets assignments (cascade)
+    const result = await this.employeeRepository.query(
+      `UPDATE "asset" SET assigned_to = NULL WHERE assigned_to = $1`,
+      [employee_id],
+    );
+
+    console.log(`ℹ️  Cleared asset assignments for employee: ${employee_id}`);
+
+    // Finally delete the employee
     await this.employeeRepository.remove(employee);
+    console.log(`✅ Employee deleted successfully: ${employee_id}`);
   }
 
   async search(searchTerm: string): Promise<Employee[]> {
