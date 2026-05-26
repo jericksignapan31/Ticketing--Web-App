@@ -10,7 +10,7 @@ export class CompleteTicketDto {
   })
   @IsString()
   @IsNotEmpty()
-  unit_status: string;
+  unit_status!: string;
 
   @ApiProperty({
     example: 'Keyboard was not responding. Found that drivers were corrupted.',
@@ -18,7 +18,7 @@ export class CompleteTicketDto {
   })
   @IsString()
   @IsNotEmpty()
-  observation: string;
+  observation!: string;
 
   @ApiProperty({
     example:
@@ -27,7 +27,7 @@ export class CompleteTicketDto {
   })
   @IsString()
   @IsNotEmpty()
-  action_taken: string;
+  action_taken!: string;
 
   @ApiProperty({
     example: 'Consider updating all drivers monthly to prevent similar issues.',
