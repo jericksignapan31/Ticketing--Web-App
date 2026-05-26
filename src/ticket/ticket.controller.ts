@@ -156,6 +156,16 @@ export class TicketController {
     return this.ticketService.findRejected(user);
   }
 
+  @Get('waiting-for-parts')
+  @ApiOperation({ summary: 'Get all tickets waiting for parts (status: waiting_for_parts, filtered by department)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all tickets waiting for parts with parts list',
+  })
+  findWaitingForParts(@CurrentUser() user: any) {
+    return this.ticketService.findWaitingForParts(user);
+  }
+
   @Get('pending-approvals')
 
   @UseGuards(RolesGuard)

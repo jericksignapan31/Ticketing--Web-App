@@ -340,6 +340,26 @@ export class TicketService {
     });
   }
 
+  async findWaitingForParts(user: any): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const where: any = { status: 'waiting_for_parts' };
+    
+    if (departmentFilter) {
+      where.department_id = departmentFilter;
+    }
+
+    return await this.ticketRepository.find({
+      where,
+      relations: [
+        'asset',
+        'asset.brand',
+        'asset.branch',
+        'parts',
+      ],
+      order: { created_at: 'DESC' },
+    });
+  }
+
   async approveTicket(
     ticket_id: string,
     supervisor_id: string,
