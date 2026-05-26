@@ -65,7 +65,7 @@ export class EmployeeService {
     }
 
     // Use transaction to create both employee and user account
-    return await this.dataSource.transaction(async (manager) => {
+    const savedEmployee = await this.dataSource.transaction(async (manager) => {
       // Create and save employee
       const employee = manager.create(Employee, createEmployeeDto);
       const savedEmployee = await manager.save(employee);
@@ -85,6 +85,24 @@ export class EmployeeService {
 
       return savedEmployee;
     });
+
+    // Return employee without circular relations to avoid serialization issues
+    const result = new Employee();
+    result.employee_id = savedEmployee.employee_id;
+    result.first_name = savedEmployee.first_name;
+    result.last_name = savedEmployee.last_name;
+    result.middle_name = savedEmployee.middle_name;
+    result.email = savedEmployee.email;
+    result.role = savedEmployee.role;
+    result.position = savedEmployee.position;
+    result.contact_number = savedEmployee.contact_number;
+    result.employment_status = savedEmployee.employment_status;
+    result.branch_id = savedEmployee.branch_id;
+    result.department_id = savedEmployee.department_id;
+    result.created_at = savedEmployee.created_at;
+    result.updated_at = savedEmployee.updated_at;
+
+    return result;
   }
 
   async findAll(
