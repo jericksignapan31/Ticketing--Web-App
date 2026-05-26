@@ -90,7 +90,38 @@ export class TicketController {
     return this.ticketService.findByCategory(user, category, departmentId);
   }
 
+  @Get('pending')
+  @ApiOperation({ summary: 'Get all pending tickets (filtered by department for employee/supervisor)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all tickets with pending status',
+  })
+  findPending(@CurrentUser() user: any) {
+    return this.ticketService.findPending(user);
+  }
+
+  @Get('in-progress')
+  @ApiOperation({ summary: 'Get all in-progress tickets (filtered by department for employee/supervisor)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all tickets with in_progress status',
+  })
+  findInProgress(@CurrentUser() user: any) {
+    return this.ticketService.findInProgress(user);
+  }
+
+  @Get('completed')
+  @ApiOperation({ summary: 'Get all completed tickets (filtered by department for employee/supervisor)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all tickets with completed status',
+  })
+  findCompleted(@CurrentUser() user: any) {
+    return this.ticketService.findCompleted(user);
+  }
+
   @Get('pending-approvals')
+
   @UseGuards(RolesGuard)
   @Roles(UserRole.SUPERVISOR, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get all tickets pending approval (filtered by department for supervisor)' })

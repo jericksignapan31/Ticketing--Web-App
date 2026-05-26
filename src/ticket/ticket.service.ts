@@ -223,6 +223,64 @@ export class TicketService {
     });
   }
 
+  // Specific status endpoints for frontend
+  async findPending(user: any): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const where: any = { status: 'pending' };
+    
+    if (departmentFilter) {
+      where.department_id = departmentFilter;
+    }
+
+    return await this.ticketRepository.find({
+      where,
+      relations: [
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findInProgress(user: any): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const where: any = { status: 'in_progress' };
+    
+    if (departmentFilter) {
+      where.department_id = departmentFilter;
+    }
+
+    return await this.ticketRepository.find({
+      where,
+      relations: [
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async findCompleted(user: any): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const where: any = { status: 'completed' };
+    
+    if (departmentFilter) {
+      where.department_id = departmentFilter;
+    }
+
+    return await this.ticketRepository.find({
+      where,
+      relations: [
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
+      order: { created_at: 'DESC' },
+    });
+  }
+
   async approveTicket(
     ticket_id: string,
     supervisor_id: string,
