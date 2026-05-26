@@ -281,6 +281,25 @@ export class TicketService {
     });
   }
 
+  async findApproved(user: any): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const where: any = { status: 'approved' };
+    
+    if (departmentFilter) {
+      where.department_id = departmentFilter;
+    }
+
+    return await this.ticketRepository.find({
+      where,
+      relations: [
+        'asset',
+        'asset.brand',
+        'asset.branch',
+      ],
+      order: { created_at: 'DESC' },
+    });
+  }
+
   async approveTicket(
     ticket_id: string,
     supervisor_id: string,

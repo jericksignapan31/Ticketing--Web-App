@@ -120,6 +120,16 @@ export class TicketController {
     return this.ticketService.findCompleted(user);
   }
 
+  @Get('approved')
+  @ApiOperation({ summary: 'Get all approved tickets (filtered by department for employee/supervisor)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all tickets with approved status',
+  })
+  findApproved(@CurrentUser() user: any) {
+    return this.ticketService.findApproved(user);
+  }
+
   @Get('pending-approvals')
 
   @UseGuards(RolesGuard)
