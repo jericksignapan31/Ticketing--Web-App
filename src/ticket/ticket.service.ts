@@ -13,6 +13,7 @@ import { ApproveTicketDto } from './dto/approve-ticket.dto';
 import { RejectTicketDto } from './dto/reject-ticket.dto';
 import { StartWorkDto } from './dto/start-work.dto';
 import { CompleteTicketDto } from './dto/complete-ticket.dto';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
 export class TicketService {
@@ -22,6 +23,19 @@ export class TicketService {
     @InjectRepository(Employee)
     private employeeRepository: Repository<Employee>,
   ) {}
+
+  /**
+   * Helper method to determine department filter based on user role
+   * - Admin/IT: No filter (see all)
+   * - Employee/Supervisor: Filter by their department
+   */
+  private getDepartmentFilter(user: any): string | undefined {
+    if (user.role === UserRole.ADMIN || user.role === UserRole.IT) {
+      return undefined; // No filter - see all tickets
+    }
+    // Employee and Supervisor only see their department tickets
+    return user.departmentId;
+  }
 
   async create(createTicketDto: CreateTicketDto): Promise<Ticket> {
     // Get the employee's department
@@ -42,30 +56,25 @@ export class TicketService {
     return await this.findOne(savedTicket.ticket_id);
   }
 
-  async findAll(departmentId?: string): Promise<Ticket[]> {
-    const query = this.ticketRepository.find({
+  async findAll(user: any, departmentId?: string): Promise<Ticket[]> {
+    // Apply department filter based on user role
+    const departmentFilter = this.getDepartmentFilter(user);
+    const finalDepartmentId = departmentId || departmentFilter;
+
+    const query: any = {
       relations: [
         'asset',
         'asset.brand',
         'asset.branch',
       ],
       order: { created_at: 'DESC' },
-    });
+    };
 
-    // Apply department filter if provided
-    if (departmentId) {
-      return await this.ticketRepository.find({
-        where: { department_id: departmentId },
-        relations: [
-          'asset',
-          'asset.brand',
-          'asset.branch',
-        ],
-        order: { created_at: 'DESC' },
-      });
+    if (finalDepartmentId) {
+      query.where = { department_id: finalDepartmentId };
     }
 
-    return await query;
+    return await this.ticketRepository.find(query);
   }
 
   async findOne(ticket_id: string): Promise<Ticket> {
@@ -100,16 +109,19 @@ export class TicketService {
     await this.ticketRepository.remove(ticket);
   }
 
-  async search(query: string, departmentId?: string): Promise<Ticket[]> {
+  async search(user: any, query: string, departmentId?: string): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const finalDepartmentId = departmentId || departmentFilter;
+
     const where: any[] = [
       { subject: Like(`%${query}%`) },
       { description: Like(`%${query}%`) },
       { category: Like(`%${query}%`) },
     ];
 
-    if (departmentId) {
+    if (finalDepartmentId) {
       where.forEach(condition => {
-        condition.department_id = departmentId;
+        condition.department_id = finalDepartmentId;
       });
     }
 
@@ -148,11 +160,14 @@ export class TicketService {
     });
   }
 
-  async findByStatus(status: string, departmentId?: string): Promise<Ticket[]> {
+  async findByStatus(user: any, status: string, departmentId?: string): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const finalDepartmentId = departmentId || departmentFilter;
+
     const where: any = { status };
     
-    if (departmentId) {
-      where.department_id = departmentId;
+    if (finalDepartmentId) {
+      where.department_id = finalDepartmentId;
     }
 
     return await this.ticketRepository.find({
@@ -166,11 +181,14 @@ export class TicketService {
     });
   }
 
-  async findByPriority(priority: string, departmentId?: string): Promise<Ticket[]> {
+  async findByPriority(user: any, priority: string, departmentId?: string): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const finalDepartmentId = departmentId || departmentFilter;
+
     const where: any = { priority };
     
-    if (departmentId) {
-      where.department_id = departmentId;
+    if (finalDepartmentId) {
+      where.department_id = finalDepartmentId;
     }
 
     return await this.ticketRepository.find({
@@ -184,11 +202,14 @@ export class TicketService {
     });
   }
 
-  async findByCategory(category: string, departmentId?: string): Promise<Ticket[]> {
+  async findByCategory(user: any, category: string, departmentId?: string): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const finalDepartmentId = departmentId || departmentFilter;
+
     const where: any = { category };
     
-    if (departmentId) {
-      where.department_id = departmentId;
+    if (finalDepartmentId) {
+      where.department_id = finalDepartmentId;
     }
 
     return await this.ticketRepository.find({
@@ -255,11 +276,14 @@ export class TicketService {
     return await this.ticketRepository.save(ticket);
   }
 
-  async findPendingApprovals(departmentId?: string): Promise<Ticket[]> {
+  async findPendingApprovals(user: any, departmentId?: string): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const finalDepartmentId = departmentId || departmentFilter;
+
     const where: any = { approval_status: 'pending' };
     
-    if (departmentId) {
-      where.department_id = departmentId;
+    if (finalDepartmentId) {
+      where.department_id = finalDepartmentId;
     }
 
     return await this.ticketRepository.find({
@@ -273,11 +297,14 @@ export class TicketService {
     });
   }
 
-  async findByApprovalStatus(approval_status: string, departmentId?: string): Promise<Ticket[]> {
+  async findByApprovalStatus(user: any, approval_status: string, departmentId?: string): Promise<Ticket[]> {
+    const departmentFilter = this.getDepartmentFilter(user);
+    const finalDepartmentId = departmentId || departmentFilter;
+
     const where: any = { approval_status };
     
-    if (departmentId) {
-      where.department_id = departmentId;
+    if (finalDepartmentId) {
+      where.department_id = finalDepartmentId;
     }
 
     return await this.ticketRepository.find({
