@@ -348,16 +348,31 @@ export class TicketService {
       where.department_id = departmentFilter;
     }
 
-    return await this.ticketRepository.find({
-      where,
-      relations: [
-        'asset',
-        'asset.brand',
-        'asset.branch',
-        'parts',
-      ],
-      order: { created_at: 'DESC' },
-    });
+    try {
+      // Try to load with parts relation
+      return await this.ticketRepository.find({
+        where,
+        relations: [
+          'asset',
+          'asset.brand',
+          'asset.branch',
+          'parts',
+        ],
+        order: { created_at: 'DESC' },
+      });
+    } catch (error) {
+      // Fallback: if parts relation doesn't exist, load without it
+      console.warn('⚠️  Could not load parts relation:', error.message);
+      return await this.ticketRepository.find({
+        where,
+        relations: [
+          'asset',
+          'asset.brand',
+          'asset.branch',
+        ],
+        order: { created_at: 'DESC' },
+      });
+    }
   }
 
   async approveTicket(
@@ -510,6 +525,11 @@ export class TicketService {
 
     // Check if parts need to be purchased
     const needsBuyParts = completeTicketDto.unit_status === 'need_buy_parts';
+
+    console.log('🔍 DEBUG: completeTicket');
+    console.log('  unit_status:', completeTicketDto.unit_status);
+    console.log('  needsBuyParts:', needsBuyParts);
+    console.log('  Will set status to:', needsBuyParts ? 'waiting_for_parts' : 'resolved');
 
     if (needsBuyParts) {
       // If parts need to be bought, set status to waiting_for_parts

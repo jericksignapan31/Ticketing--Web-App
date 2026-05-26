@@ -245,7 +245,7 @@ PATCH /tickets/456/complete
   "ticket_id": "456",
   "status": "waiting_for_parts",
   "resolved_at": null,
-  "unit_status": "need_buy_parts",
+  "unit_status": "  ",
   "observation": "Keyboard broken",
   "action_taken": "Identified keyboard malfunction",
   "parts": []
