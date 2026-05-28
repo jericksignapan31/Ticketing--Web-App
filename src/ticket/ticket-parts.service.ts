@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { TicketParts } from '../entities/ticket-parts.entity';
 import { Ticket } from '../entities/ticket.entity';
 import { CreateTicketPartsDto } from './dto/create-ticket-parts.dto';
@@ -56,7 +57,11 @@ export class TicketPartsService {
       createTicketPartsDto.quantity * createTicketPartsDto.unit_cost;
 
     try {
+      // Explicitly generate UUID for part_id
+      const part_id = uuidv4();
+
       const part = this.ticketPartsRepository.create({
+        part_id,
         ticket_id,
         part_name: createTicketPartsDto.part_name.trim(),
         quantity: createTicketPartsDto.quantity,
