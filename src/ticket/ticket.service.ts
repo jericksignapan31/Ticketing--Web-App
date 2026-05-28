@@ -509,10 +509,11 @@ export class TicketService {
   ): Promise<Ticket> {
     const ticket = await this.findOne(ticket_id);
 
-    // Validate ticket is in progress
-    if (ticket.status !== 'in_progress') {
+    // Validate ticket is in progress or on hold (waiting for parts)
+    const validStatuses = ['in_progress', 'hold'];
+    if (!validStatuses.includes(ticket.status)) {
       throw new BadRequestException(
-        `Cannot complete ticket with status '${ticket.status}'. Ticket must be in progress.`,
+        `Cannot complete ticket with status '${ticket.status}'. Ticket must be in progress or on hold.`,
       );
     }
 
