@@ -13,6 +13,7 @@ import { ApproveTicketDto } from './dto/approve-ticket.dto';
 import { RejectTicketDto } from './dto/reject-ticket.dto';
 import { StartWorkDto } from './dto/start-work.dto';
 import { CompleteTicketDto } from './dto/complete-ticket.dto';
+import { ResumeFromHoldDto } from './dto/resume-from-hold.dto';
 import { TicketPartsService } from './ticket-parts.service';
 import { UserRole } from '../common/enums/user-role.enum';
 
@@ -576,6 +577,37 @@ export class TicketService {
 
     if (completeTicketDto.resolution_notes) {
       ticket.resolution_notes = completeTicketDto.resolution_notes;
+    }
+
+    return await this.ticketRepository.save(ticket);
+  }
+
+  async resumeFromHold(
+    ticket_id: string,
+    it_staff_id: string,
+    resumeFromHoldDto: ResumeFromHoldDto,
+  ): Promise<Ticket> {
+    const ticket = await this.findOne(ticket_id);
+
+    // Validate ticket is on hold
+    if (ticket.status !== 'hold') {
+      throw new BadRequestException(
+        `Cannot resume from hold. Ticket status is '${ticket.status}', must be 'hold' to resume work.`,
+      );
+    }
+
+    // Validate IT staff is assigned to this ticket
+    if (ticket.assigned_to && ticket.assigned_to !== it_staff_id) {
+      throw new BadRequestException(
+        `You are not assigned to this ticket. Assigned to: ${ticket.assigned_to}`,
+      );
+    }
+
+    // Update status back to in_progress
+    ticket.status = 'in_progress';
+
+    if (resumeFromHoldDto.notes) {
+      ticket.resolution_notes = resumeFromHoldDto.notes;
     }
 
     return await this.ticketRepository.save(ticket);

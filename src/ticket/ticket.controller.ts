@@ -23,6 +23,7 @@ import { ApproveTicketDto } from './dto/approve-ticket.dto';
 import { RejectTicketDto } from './dto/reject-ticket.dto';
 import { StartWorkDto } from './dto/start-work.dto';
 import { CompleteTicketDto } from './dto/complete-ticket.dto';
+import { ResumeFromHoldDto } from './dto/resume-from-hold.dto';
 import { CreateTicketPartsDto } from './dto/create-ticket-parts.dto';
 import { UpdateTicketPartsDto } from './dto/update-ticket-parts.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -287,6 +288,31 @@ export class TicketController {
       id,
       user.employee_id,
       completeTicketDto,
+    );
+  }
+
+  @Patch(':id/resume-from-hold')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Resume work on a ticket from hold status (IT Staff only)',
+  })
+  @ApiParam({ name: 'id', description: 'Ticket ID' })
+  @ApiResponse({ status: 200, description: 'Ticket resumed from hold successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Ticket is not on hold or not assigned to you',
+  })
+  @ApiResponse({ status: 404, description: 'Ticket not found' })
+  resumeFromHold(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+    @Body() resumeFromHoldDto: ResumeFromHoldDto,
+  ) {
+    return this.ticketService.resumeFromHold(
+      id,
+      user.employee_id,
+      resumeFromHoldDto,
     );
   }
 
