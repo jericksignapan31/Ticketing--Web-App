@@ -388,4 +388,38 @@ export class TicketController {
   deletePart(@Param('part_id') part_id: string) {
     return this.ticketPartsService.deletePart(part_id);
   }
+
+  // ============ PARTS INVENTORY ENDPOINTS ============
+
+  @Get('inventory/all')
+  @ApiOperation({ summary: 'Get all requested parts across all tickets' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all parts requested, ordered by most recent first',
+  })
+  getAllParts() {
+    return this.ticketPartsService.getAllParts();
+  }
+
+  @Get('inventory/status/:status')
+  @ApiOperation({ summary: 'Get all parts by status (pending/ordered/received)' })
+  @ApiParam({ name: 'status', enum: ['pending', 'ordered', 'received'] })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns parts with specified status',
+  })
+  getPartsByStatus(@Param('status') status: string) {
+    return this.ticketPartsService.getPartsByStatus(status);
+  }
+
+  @Get('inventory/supplier/:supplier')
+  @ApiOperation({ summary: 'Get all parts from a specific supplier' })
+  @ApiParam({ name: 'supplier', description: 'Supplier name' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns parts from specified supplier',
+  })
+  getPartsBySupplier(@Param('supplier') supplier: string) {
+    return this.ticketPartsService.getPartsBySupplier(supplier);
+  }
 }

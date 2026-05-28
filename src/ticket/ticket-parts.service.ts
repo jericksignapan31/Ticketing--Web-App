@@ -157,4 +157,27 @@ export class TicketPartsService {
     const parts = await this.findAllPartsForTicket(ticket_id);
     return parts.reduce((sum, part) => sum + parseFloat(part.total_cost.toString()), 0);
   }
+
+  async getAllParts(): Promise<TicketParts[]> {
+    return await this.ticketPartsRepository.find({
+      relations: ['ticket'],
+      order: { requested_date: 'DESC' },
+    });
+  }
+
+  async getPartsByStatus(status: string): Promise<TicketParts[]> {
+    return await this.ticketPartsRepository.find({
+      where: { status },
+      relations: ['ticket'],
+      order: { requested_date: 'DESC' },
+    });
+  }
+
+  async getPartsBySupplier(supplier: string): Promise<TicketParts[]> {
+    return await this.ticketPartsRepository.find({
+      where: { supplier },
+      relations: ['ticket'],
+      order: { requested_date: 'DESC' },
+    });
+  }
 }
