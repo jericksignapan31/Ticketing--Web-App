@@ -77,7 +77,8 @@ Response:
 ```
 
 ### Step 4: Show Complete Ticket Form
-**Display form with 5 required fields** for IT staff to complete:
+**Display form with 5 fields** for IT staff to complete:
+⚠️ **IMPORTANT: Only show 3 unit_status options (NOT need_buy_parts)**
 
 ```
 ┌────────────────────────────────────────────┐
@@ -95,6 +96,7 @@ Response:
 │   ○ Working          (bagay na)            │
 │   ○ Not Working      (hindi bagay)         │
 │   ○ Partially Working (bahay-bahay)        │
+│   ✓ DO NOT show "need_buy_parts"           │
 │                                            │
 │ * Observation:                             │
 │   [________________________________]       │
@@ -136,19 +138,20 @@ const validateCompletion = (formData) => {
     errors.push("Action Taken is required");
   }
 
-  // 2. Check unit_status is valid
-  const validStatuses = ['working', 'not_working', 'partially_working'];
-  if (formData.unit_status && !validStatuses.includes(formData.unit_status)) {
-    errors.push("Invalid unit status");
+  // 2. Check unit_status is valid for HOLD status
+  // When ticket is on HOLD, only these 3 are valid:
+  const validStatusesForHold = ['working', 'not_working', 'partially_working'];
+  if (formData.unit_status && !validStatusesForHold.includes(formData.unit_status)) {
+    errors.push("Invalid unit status for hold tickets. Must be: working, not_working, or partially_working");
   }
 
-  // 3. Check unit_status is NOT "need_buy_parts"
-  // (because ticket is already on HOLD waiting for parts)
+  // 3. Backend will reject if unit_status is "need_buy_parts" on HOLD
+  // (but frontend should NOT allow this option anyway)
   if (formData.unit_status === 'need_buy_parts') {
     errors.push("Cannot set to 'need_buy_parts' - ticket is already on hold");
   }
 
-  // 4. Check at least all parts are received
+  // 4. Check all parts are received
   const allPartsReceived = ticket.parts?.every(p => p.status === 'received');
   if (!allPartsReceived) {
     errors.push("All parts must be marked as received before completing");
@@ -263,16 +266,17 @@ PATCH /tickets/{ticket_id}/complete
 ```json
 {
   "statusCode": 400,
-  "message": "Cannot complete ticket. 1 part(s) still pending or not received. Please confirm all parts are received first using /tickets/:id/parts/:part_id endpoint.",
+  "message": "Cannot complete ticket. 2 part(s) still pending or not received:\n  - Keyboard (Status: pending)\n  - Mouse (Status: ordered)\nPlease update part status to \"received\" using PATCH /tickets/:id/parts/:part_id endpoint.",
   "error": "Bad Request"
 }
 ```
 
 **Frontend Action:**
-- Show error message
-- Highlight which parts are not received
-- Show button to update part status
-- Don't allow saving until all parts are marked received
+- Show error message with specific parts listed
+- Highlight which parts are pending/ordered/not received
+- Parse the error message to extract part names and statuses
+- Show button for each pending part to update its status
+- Don't allow saving until all parts are marked as "received"
 
 #### ❌ Error 2: Invalid Unit Status
 ```json
@@ -314,6 +318,21 @@ PATCH /tickets/{ticket_id}/complete
 - Show error: Ticket is not ready to complete
 - Refresh ticket data from server
 - Show current status
+
+#### ❌ Error 5: Cannot set need_buy_parts when already HOLD
+```json
+{
+  "statusCode": 400,
+  "message": "Cannot set unit_status to 'need_buy_parts' - ticket is already on hold waiting for parts. Please mark unit_status as 'working', 'not_working', or 'partially_working' after parts arrive.",
+  "error": "Bad Request"
+}
+```
+
+**Frontend Action:**
+- Show error message prominently
+- Disable the "need_buy_parts" option in the UI
+- Only show options: working, not_working, partially_working
+- Guide user to select one of these options
 
 ---
 
@@ -428,6 +447,7 @@ export const CompleteFromHoldModal: React.FC<CompleteFromHoldProps> = ({
       {/* Form */}
       <form onSubmit={handleSubmit}>
         {/* Unit Status - REQUIRED */}
+        {/* NOTE: Only show 3 options, NOT need_buy_parts */}
         <div className="form-group">
           <label>* Unit Status (Required)</label>
           <div className="radio-group">
@@ -467,6 +487,7 @@ export const CompleteFromHoldModal: React.FC<CompleteFromHoldProps> = ({
               />
               Partially Working ⚠️
             </label>
+            {/* DO NOT SHOW need_buy_parts - ticket is already on hold */}
           </div>
         </div>
 
@@ -541,22 +562,28 @@ export const CompleteFromHoldModal: React.FC<CompleteFromHoldProps> = ({
 
 ### ⚠️ Critical Requirements
 
-1. **Do NOT send `unit_status: "need_buy_parts"`**
-   - This is only for tickets in `in_progress` status
-   - Ticket is already in `hold`, so only send: `working`, `not_working`, or `partially_working`
+1. **Do NOT show `unit_status: "need_buy_parts"` option on form**
+   - This is ONLY for tickets in `in_progress` status
+   - When completing from `hold`, only show 3 options:
+     - ✅ working
+     - ❌ not_working  
+     - ⚠️ partially_working
+   - Backend will reject if you send "need_buy_parts"
 
 2. **All parts MUST be marked as received first**
-   - Backend will validate this
-   - Show user warning if any parts are still pending
+   - Frontend validation: Check all parts have status === "received"
+   - Backend validation: Will reject with list of pending parts
+   - Show user which parts are still pending/ordered
 
 3. **All 3 required fields MUST be filled**
-   - `unit_status` ← Choose from 3 options
+   - `unit_status` ← Choose from 3 options (NOT need_buy_parts)
    - `observation` ← Describe what you saw
    - `action_taken` ← Describe what you did
 
 4. **Ticket will transition from HOLD → RESOLVED**
    - After successful completion, ticket status becomes `resolved`
    - Ticket will no longer appear in "waiting for parts" list
+   - Display updated status in UI
 
 ---
 
@@ -576,8 +603,33 @@ export const CompleteFromHoldModal: React.FC<CompleteFromHoldProps> = ({
 
 ## Common Issues & Fixes
 
-### Issue: "Parts not received" error
-**Fix:** Update all parts to "received" status first using the parts update endpoint
+### Issue: "Parts not received" error with specific parts listed
+```
+Cannot complete ticket. 2 part(s) still pending or not received:
+  - Keyboard (Status: pending)
+  - Mouse (Status: ordered)
+Please update part status to "received"...
+```
+**Fix:** 
+- Parse the error message to extract part names and statuses
+- Show user which specific parts are pending
+- Provide button to update each pending part's status
+- Re-fetch parts list after updating
+
+### Issue: "Cannot set to 'need_buy_parts'" error when already HOLD
+```
+Cannot set unit_status to 'need_buy_parts' - ticket is already on hold waiting for parts.
+```
+**Fix:** 
+- Don't show "need_buy_parts" as an option on the form
+- Only show: working, not_working, partially_working
+- This should not happen if frontend validates correctly
+
+### Issue: All parts marked received but still getting error
+**Fix:** 
+- Refresh parts list from server before submitting
+- Verify backend shows all parts have status = "received"
+- Check for caching issues in frontend
 
 ### Issue: Cannot find the complete button
 **Fix:** Check that ticket status is exactly "hold" (lowercase)
