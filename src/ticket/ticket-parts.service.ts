@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TicketParts } from '../entities/ticket-parts.entity';
+import { Ticket } from '../entities/ticket.entity';
 import { CreateTicketPartsDto } from './dto/create-ticket-parts.dto';
 import { UpdateTicketPartsDto } from './dto/update-ticket-parts.dto';
 
@@ -14,25 +15,74 @@ export class TicketPartsService {
   constructor(
     @InjectRepository(TicketParts)
     private ticketPartsRepository: Repository<TicketParts>,
+    @InjectRepository(Ticket)
+    private ticketRepository: Repository<Ticket>,
   ) {}
 
   async createPart(
     ticket_id: string,
     createTicketPartsDto: CreateTicketPartsDto,
   ): Promise<TicketParts> {
+    // Validate ticket exists
+    const ticket = await this.ticketRepository.findOne({
+      where: { ticket_id },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException(
+        `Ticket with ID '${ticket_id}' not found. Cannot create parts for non-existent ticket.`,
+      );
+    }
+
+    // Validate input
+    if (!createTicketPartsDto.part_name || createTicketPartsDto.part_name.trim() === '') {
+      throw new BadRequestException('part_name is required and cannot be empty');
+    }
+
+    if (!createTicketPartsDto.quantity || createTicketPartsDto.quantity <= 0) {
+      throw new BadRequestException('quantity must be a positive number');
+    }
+
+    if (!createTicketPartsDto.unit_cost || createTicketPartsDto.unit_cost <= 0) {
+      throw new BadRequestException('unit_cost must be a positive number');
+    }
+
+    if (!createTicketPartsDto.supplier || createTicketPartsDto.supplier.trim() === '') {
+      throw new BadRequestException('supplier is required and cannot be empty');
+    }
+
     // Calculate total cost
     const total_cost =
       createTicketPartsDto.quantity * createTicketPartsDto.unit_cost;
 
-    const part = this.ticketPartsRepository.create({
-      ticket_id,
-      ...createTicketPartsDto,
-      total_cost,
-      requested_date: new Date(),
-      status: 'pending',
-    });
+    try {
+      const part = this.ticketPartsRepository.create({
+        ticket_id,
+        part_name: createTicketPartsDto.part_name.trim(),
+        quantity: createTicketPartsDto.quantity,
+        unit_cost: createTicketPartsDto.unit_cost,
+        supplier: createTicketPartsDto.supplier.trim(),
+        total_cost,
+        requested_date: new Date(),
+        status: 'pending',
+        notes: createTicketPartsDto.notes?.trim(),
+      });
 
-    return await this.ticketPartsRepository.save(part);
+      const savedPart = await this.ticketPartsRepository.save(part);
+      
+      console.log('✅ Part created successfully:', {
+        part_id: savedPart.part_id,
+        ticket_id,
+        part_name: savedPart.part_name,
+      });
+
+      return savedPart;
+    } catch (error) {
+      console.error('❌ Error creating part:', error);
+      throw new BadRequestException(
+        `Failed to create part: ${error.message}`,
+      );
+    }
   }
 
   async findAllPartsForTicket(ticket_id: string): Promise<TicketParts[]> {

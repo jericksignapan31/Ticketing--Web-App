@@ -327,7 +327,8 @@ export class TicketController {
   @ApiOperation({ summary: 'Request parts for a ticket (IT Staff only)' })
   @ApiParam({ name: 'id', description: 'Ticket ID' })
   @ApiResponse({ status: 201, description: 'Part request created' })
-  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 400, description: 'Invalid input or validation error' })
+  @ApiResponse({ status: 404, description: 'Ticket not found' })
   createPart(
     @Param('id') ticket_id: string,
     @Body() createTicketPartsDto: CreateTicketPartsDto,
