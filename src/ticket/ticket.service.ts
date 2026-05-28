@@ -524,10 +524,19 @@ export class TicketService {
       );
     }
 
+    // CRITICAL: Validate unit_status is not "need_buy_parts" when ticket is already on HOLD
+    if (ticket.status === 'hold' && completeTicketDto.unit_status === 'need_buy_parts') {
+      throw new BadRequestException(
+        `Cannot set unit_status to 'need_buy_parts' - ticket is already on hold waiting for parts. ` +
+        `Please mark unit_status as 'working', 'not_working', or 'partially_working' after parts arrive.`,
+      );
+    }
+
     // Check if parts need to be purchased
     const needsBuyParts = completeTicketDto.unit_status === 'need_buy_parts';
 
     console.log('🔍 DEBUG: completeTicket');
+    console.log('  status:', ticket.status);
     console.log('  unit_status:', completeTicketDto.unit_status);
     console.log('  needsBuyParts:', needsBuyParts);
     console.log('  Will set status to:', needsBuyParts ? 'hold' : 'resolved');
@@ -545,8 +554,9 @@ export class TicketService {
           ticket_id,
         );
         throw new BadRequestException(
-          `Cannot complete ticket. ${pendingParts.length} part(s) still pending or not received. ` +
-          'Please confirm all parts are received first using /tickets/:id/parts/:part_id endpoint.',
+          `Cannot complete ticket. ${pendingParts.length} part(s) still pending or not received:\n` +
+          pendingParts.map(p => `  - ${p.part_name} (Status: ${p.status})`).join('\n') + '\n' +
+          'Please update part status to "received" using PATCH /tickets/:id/parts/:part_id endpoint.',
         );
       }
 
