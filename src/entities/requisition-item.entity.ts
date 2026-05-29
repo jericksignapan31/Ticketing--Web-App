@@ -24,7 +24,7 @@ export class RequisitionItem {
   @Column()
   unit: string; // e.g., pcs, box, set
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   supplier: string | null;
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
