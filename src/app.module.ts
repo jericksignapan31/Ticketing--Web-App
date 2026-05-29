@@ -13,6 +13,7 @@ import { Brand } from './entities/brand.entity';
 import { Asset } from './entities/asset.entity';
 import { Ticket } from './entities/ticket.entity';
 import { TicketParts } from './entities/ticket-parts.entity';
+import { WarehousePartRequest } from './entities/warehouse-part-request.entity';
 import { RepairLog } from './entities/repair-log.entity';
 import { AssetStatusHistory } from './entities/asset-status-history.entity';
 import { AssetAssignmentHistory } from './entities/asset-assignment-history.entity';
@@ -30,6 +31,7 @@ import { RepairLogModule } from './repair-log/repair-log.module';
 import { UserAccountModule } from './user-account/user-account.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ChatModule } from './chat/chat.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
 
 @Module({
   imports: [
@@ -62,6 +64,7 @@ import { ChatModule } from './chat/chat.module';
           Asset,
           Ticket,
           TicketParts,
+          WarehousePartRequest,
           RepairLog,
           AssetStatusHistory,
           AssetAssignmentHistory,
@@ -94,6 +97,7 @@ import { ChatModule } from './chat/chat.module';
     UserAccountModule,
     DashboardModule,
     ChatModule,
+    WarehouseModule,
   ],
   controllers: [AppController],
   providers: [

@@ -8,6 +8,7 @@ import { Brand } from './entities/brand.entity';
 import { Asset } from './entities/asset.entity';
 import { Ticket } from './entities/ticket.entity';
 import { TicketParts } from './entities/ticket-parts.entity';
+import { WarehousePartRequest } from './entities/warehouse-part-request.entity';
 import { RepairLog } from './entities/repair-log.entity';
 import { Message } from './chat/entities/message.entity';
 import { Conversation } from './chat/entities/conversation.entity';
@@ -31,6 +32,7 @@ export const AppDataSource = new DataSource({
     Asset,
     Ticket,
     TicketParts,
+    WarehousePartRequest,
     RepairLog,
     Message,
     Conversation,

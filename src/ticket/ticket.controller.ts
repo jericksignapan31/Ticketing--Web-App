@@ -178,10 +178,9 @@ export class TicketController {
   }
 
   @Get('pending-approvals')
-
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPERVISOR, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Get all tickets pending approval (filtered by department for supervisor)' })
+  @Roles(UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Get all tickets pending approval (filtered by department for supervisor/warehouse)' })
   @ApiResponse({
     status: 200,
     description: 'Returns all tickets pending supervisor approval',
@@ -192,8 +191,8 @@ export class TicketController {
 
   @Get('approval-status/:status')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPERVISOR, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Get tickets by approval status (filtered by department for supervisor)' })
+  @Roles(UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Get tickets by approval status (filtered by department for supervisor/warehouse)' })
   @ApiParam({ name: 'status', enum: ['pending', 'approved', 'rejected'] })
   @ApiResponse({
     status: 200,
@@ -205,8 +204,8 @@ export class TicketController {
 
   @Patch(':id/approve')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.SUPERVISOR, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Approve a ticket (Supervisor only)' })
+  @Roles(UserRole.SUPERVISOR, UserRole.ADMIN, UserRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Approve a ticket (Supervisor/Warehouse/Admin)' })
   @ApiParam({ name: 'id', description: 'Ticket ID' })
   @ApiResponse({ status: 200, description: 'Ticket approved successfully' })
   @ApiResponse({ status: 400, description: 'Ticket is not in pending status' })
@@ -392,7 +391,9 @@ export class TicketController {
   // ============ PARTS INVENTORY ENDPOINTS ============
 
   @Get('inventory/all')
-  @ApiOperation({ summary: 'Get all requested parts across all tickets' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN, UserRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Get all requested parts across all tickets (IT/Warehouse/Admin)' })
   @ApiResponse({
     status: 200,
     description: 'Returns all parts requested, ordered by most recent first',
@@ -402,7 +403,9 @@ export class TicketController {
   }
 
   @Get('inventory/status/:status')
-  @ApiOperation({ summary: 'Get all parts by status (pending/ordered/received)' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN, UserRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Get all parts by status (IT/Warehouse/Admin)' })
   @ApiParam({ name: 'status', enum: ['pending', 'ordered', 'received'] })
   @ApiResponse({
     status: 200,
@@ -413,7 +416,9 @@ export class TicketController {
   }
 
   @Get('inventory/supplier/:supplier')
-  @ApiOperation({ summary: 'Get all parts from a specific supplier' })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN, UserRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Get all parts from a specific supplier (IT/Warehouse/Admin)' })
   @ApiParam({ name: 'supplier', description: 'Supplier name' })
   @ApiResponse({
     status: 200,
