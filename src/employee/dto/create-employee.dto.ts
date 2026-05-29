@@ -67,7 +67,7 @@ export class CreateEmployeeDto {
     enumName: 'UserRole',
   })
   @IsNotEmpty()
-  @IsEnum(UserRole, { message: 'Role must be one of: admin, it, employee' })
+  @IsEnum(UserRole, { message: 'Role must be one of: admin, it, employee, supervisor, warehouse' })
   role: UserRole;
 
   @ApiProperty({
