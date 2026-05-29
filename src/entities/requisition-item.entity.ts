@@ -33,7 +33,7 @@ export class RequisitionItem {
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   total_cost: number | null;
 
-  @Column({ nullable: true })
+  @Column('varchar', { nullable: true })
   purpose_remarks: string | null;
 
   @ManyToOne(() => PartRequisition, (req) => req.items, { onDelete: 'CASCADE' })
