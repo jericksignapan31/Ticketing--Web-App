@@ -239,4 +239,50 @@ export class RequisitionService {
       .orderBy('req.created_at', 'DESC')
       .getMany();
   }
+
+  async getApprovedRequisitions(): Promise<PartRequisition[]> {
+    return this.requisitionRepository
+      .createQueryBuilder('req')
+      .leftJoinAndSelect('req.items', 'items')
+      .leftJoinAndSelect('req.requester', 'requester')
+      .leftJoinAndSelect('req.approver', 'approver')
+      .where('req.status = :status', { status: 'approved' })
+      .orderBy('req.approved_at', 'DESC')
+      .getMany();
+  }
+
+  async getRequisitionInventory(): Promise<Record<string, any>[]> {
+    const requisitions = await this.requisitionRepository
+      .createQueryBuilder('req')
+      .leftJoinAndSelect('req.items', 'items')
+      .leftJoinAndSelect('req.requester', 'requester')
+      .orderBy('req.created_at', 'DESC')
+      .getMany();
+
+    // Format as inventory list with requisition details
+    const inventory: Record<string, any>[] = [];
+    requisitions.forEach((req) => {
+      req.items.forEach((item) => {
+        inventory.push({
+          item_id: item.item_id,
+          requisition_id: req.requisition_id,
+          rf_number: req.rf_number,
+          item_name: item.item_name,
+          quantity: item.quantity,
+          unit: item.unit,
+          supplier: item.supplier,
+          unit_cost: item.unit_cost,
+          total_cost: item.total_cost,
+          purpose_remarks: item.purpose_remarks,
+          requisition_status: req.status,
+          requested_by_type: req.requested_by_type,
+          requester: req.requester,
+          created_at: req.created_at,
+          updated_at: req.updated_at,
+        });
+      });
+    });
+
+    return inventory;
+  }
 }

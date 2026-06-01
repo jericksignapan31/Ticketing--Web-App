@@ -144,4 +144,28 @@ export class RequisitionController {
   ) {
     return this.requisitionService.approveRequisition(rf_number, user.employee_id, approveDto);
   }
+
+  @Get('approved')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.WAREHOUSE, UserRole.IT)
+  @ApiOperation({ summary: 'Get all approved requisitions' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all approved requisitions with items',
+  })
+  getApprovedRequisitions() {
+    return this.requisitionService.getApprovedRequisitions();
+  }
+
+  @Get('inventory')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.WAREHOUSE, UserRole.IT)
+  @ApiOperation({ summary: 'Get inventory status of all requisition items' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all items from all requisitions with their status and requester info',
+  })
+  getRequisitionInventory() {
+    return this.requisitionService.getRequisitionInventory();
+  }
 }
