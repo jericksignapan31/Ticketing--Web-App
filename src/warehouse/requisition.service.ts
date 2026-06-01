@@ -221,8 +221,7 @@ export class RequisitionService {
     return this.requisitionRepository
       .createQueryBuilder('req')
       .leftJoinAndSelect('req.items', 'items')
-      .leftJoinAndSelect('req.acknowledger', 'acknowledger')
-      .leftJoinAndSelect('req.approver', 'approver')
+      .leftJoinAndSelect('req.requester', 'requester')
       .where('req.requested_by = :requester_id', { requester_id })
       .orderBy('req.created_at', 'DESC')
       .getMany();
