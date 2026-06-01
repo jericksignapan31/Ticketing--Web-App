@@ -340,7 +340,128 @@ rejected (final state - rejected, see rejection_reason)
 
 ---
 
-### 7. Approve or Reject Requisition (Admin Decision)
+### 7. Get All Approved Requisitions
+**GET** `/requisitions/approved`
+
+**Who can access**: ADMIN, WAREHOUSE, IT roles
+
+**Purpose**: View all requisitions that have been approved (final state)
+
+**Query Params**: None
+
+**Response** (200 OK):
+```json
+[
+  {
+    "requisition_id": "uuid",
+    "rf_number": "RF-2026-002",
+    "requested_by_type": "warehouse",
+    "status": "approved",
+    "department": "Warehouse",
+    "acknowledged_by": "warehouse-uuid",
+    "acknowledged_at": "2026-06-01T06:19:43Z",
+    "acknowledged_notes": "Verified inventory - items in stock",
+    "approved_by": "admin-uuid",
+    "approved_at": "2026-05-31T22:34:15Z",
+    "rejection_reason": null,
+    "items": [
+      {
+        "item_id": "uuid1",
+        "item_name": "asdasd",
+        "quantity": 232,
+        "unit": "pcs",
+        "supplier": "asdasd",
+        "unit_cost": "222.00",
+        "total_cost": "51504.00",
+        "purpose_remarks": "asdsa"
+      }
+    ],
+    "requester": {
+      "employee_id": "uuid",
+      "first_name": "Haidee",
+      "last_name": "Onofre",
+      "email": "warehouse.min@tecfuel.ph",
+      "role": "warehouse",
+      "position": "Warehouse OIC"
+    },
+    "approver": {
+      "employee_id": "uuid",
+      "first_name": "Jiepebu",
+      "last_name": "Guillermo",
+      "email": "jvguillermo@tecfuel.ph",
+      "role": "admin",
+      "position": "Operations Head - MBG"
+    },
+    "created_at": "2026-05-31T22:14:52Z",
+    "updated_at": "2026-05-31T22:34:15Z"
+  }
+]
+```
+
+---
+
+### 8. Get Requisition Inventory (All Items from All Requisitions)
+**GET** `/requisitions/inventory`
+
+**Who can access**: ADMIN, WAREHOUSE, IT roles
+
+**Purpose**: View flat list of all items across all requisitions for inventory tracking. Useful for warehouse inventory management and procurement planning.
+
+**Query Params**: None
+
+**Response** (200 OK):
+```json
+[
+  {
+    "item_id": "uuid",
+    "requisition_id": "uuid",
+    "rf_number": "RF-2026-003",
+    "item_name": "asd",
+    "quantity": 2,
+    "unit": "pcs",
+    "supplier": "2",
+    "unit_cost": "2.00",
+    "total_cost": "4.00",
+    "purpose_remarks": null,
+    "requisition_status": "rejected",
+    "requested_by_type": "it",
+    "requester": {
+      "employee_id": "uuid",
+      "first_name": "John",
+      "last_name": "Smith",
+      "email": "john.smith@tecfuel.ph"
+    },
+    "created_at": "2026-05-31T22:14:52Z",
+    "updated_at": "2026-05-31T22:34:15Z"
+  },
+  {
+    "item_id": "uuid",
+    "requisition_id": "uuid",
+    "rf_number": "RF-2026-002",
+    "item_name": "asdasd",
+    "quantity": 232,
+    "unit": "pcs",
+    "supplier": "asdasd",
+    "unit_cost": "222.00",
+    "total_cost": "51504.00",
+    "purpose_remarks": "asdsa",
+    "requisition_status": "approved",
+    "requested_by_type": "warehouse",
+    "requester": {
+      "employee_id": "uuid",
+      "first_name": "Haidee",
+      "last_name": "Onofre",
+      "email": "warehouse.min@tecfuel.ph"
+    },
+    "created_at": "2026-05-31T22:14:52Z",
+    "updated_at": "2026-05-31T22:34:15Z"
+  }
+]
+```
+
+---
+
+### 9. Approve or Reject Requisition (Admin Decision)
 **PATCH** `/requisitions/:rf_number/approve`
 
 **Who can access**: ADMIN role
@@ -451,9 +572,28 @@ rejected (final state - rejected, see rejection_reason)
   - Show success with final status
 
 - [ ] **Approval History**
-  - Show all approved and rejected requisitions
+  - GET `/requisitions/approved` - Show all approved requisitions
   - Filter by status: approved, rejected
   - Shows approval date, decision maker, rejection reason if rejected
+
+#### 4. WAREHOUSE & INVENTORY MANAGEMENT
+- [ ] **Approved Requisitions View**
+  - GET `/requisitions/approved`
+  - Show all approved parts ready for ordering/procurement
+  - Display: RF number, requester, warehouse acknowledger, items with quantities and costs
+  - Sort by approval date (newest first)
+  - Export or print functionality for PO creation
+
+- [ ] **Inventory Tracking Dashboard**
+  - GET `/requisitions/inventory`
+  - Flat list view of all items from all requisitions
+  - Columns: Item name, quantity, unit, supplier, unit cost, total cost, status, requester
+  - Filter by: requisition status (pending, approved, rejected), item name, supplier
+  - Useful for: inventory planning, supplier management, cost tracking
+  - Color-code by requisition status:
+    - Approved items → green (ready to order)
+    - Pending/admin review → yellow (not yet confirmed)
+    - Rejected → red/grayed out (cancelled)
 
 ### Shared Components Across All Roles
 
@@ -593,12 +733,33 @@ curl -X PATCH http://localhost:3000/requisitions/RF-2026-001/approve \
   -d '{"action": "approved"}'
 ```
 
+### Get Approved Requisitions
+```bash
+curl -X GET http://localhost:3000/requisitions/approved \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Get Inventory Tracking
+```bash
+curl -X GET http://localhost:3000/requisitions/inventory \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
 ---
 
 ## Summary
 
 **Backend provides**:
-- 7 REST endpoints for complete requisition lifecycle
+- 9 REST endpoints for complete requisition lifecycle
+  1. POST /requisitions - Create new requisition
+  2. GET /requisitions/my-requisitions - My created requisitions
+  3. GET /requisitions/pending - Warehouse review queue
+  4. GET /requisitions/pending-admin-review - Admin approval queue
+  5. GET /requisitions/:rf_number - Requisition detail view
+  6. PATCH /requisitions/:rf_number/acknowledge - Warehouse review
+  7. PATCH /requisitions/:rf_number/approve - Admin decision
+  8. GET /requisitions/approved - All approved requisitions (NEW)
+  9. GET /requisitions/inventory - Flat inventory list (NEW)
 - 3-level approval workflow with status tracking
 - Multi-item support per requisition
 - Auto-incrementing RF numbers
@@ -611,3 +772,5 @@ curl -X PATCH http://localhost:3000/requisitions/RF-2026-001/approve \
 - Approval/rejection interface (ADMIN)
 - Detail view showing full requisition with items
 - Status badges and workflow indicators
+- Approved requisitions view (for procurement/ordering)
+- Inventory tracking dashboard (for warehouse management)
