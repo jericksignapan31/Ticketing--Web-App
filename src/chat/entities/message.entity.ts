@@ -3,12 +3,14 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserAccount } from '../../entities/user-account.entity';
 import { Conversation } from './conversation.entity';
+import { FileAttachment } from './file-attachment.entity';
 
 @Entity('message')
 export class Message {
@@ -26,6 +28,12 @@ export class Message {
 
   @Column({ default: false })
   is_read!: boolean;
+
+  @OneToMany(() => FileAttachment, (attachment) => attachment.message, {
+    eager: true,
+    cascade: ['insert', 'remove'],
+  })
+  attachments!: FileAttachment[];
 
   @ManyToOne(() => Conversation, (conversation) => conversation.messages, {
     onDelete: 'CASCADE',

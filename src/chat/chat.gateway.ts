@@ -103,13 +103,14 @@ export class ChatGateway
 
       const room = `conversation_${data.conversation_id}`;
 
-      // Broadcast message to all participants in the conversation
+      // Broadcast message to all participants in the conversation (now includes attachments)
       this.server.to(room).emit('new_message', {
         message_id: message.message_id,
         conversation_id: message.conversation_id,
         sender_id: message.sender_id,
         content: message.content,
         is_read: message.is_read,
+        attachments: message.attachments || [], // ← Include attachments
         created_at: message.created_at,
       });
 

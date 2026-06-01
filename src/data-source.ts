@@ -14,6 +14,7 @@ import { RequisitionItem } from './entities/requisition-item.entity';
 import { RepairLog } from './entities/repair-log.entity';
 import { Message } from './chat/entities/message.entity';
 import { Conversation } from './chat/entities/conversation.entity';
+import { FileAttachment } from './chat/entities/file-attachment.entity';
 
 // Load environment variables
 config({ path: '.env' });
@@ -40,6 +41,7 @@ export const AppDataSource = new DataSource({
     RepairLog,
     Message,
     Conversation,
+    FileAttachment,
   ],
   migrations: ['dist/migrations/*.js'],
   synchronize: false,

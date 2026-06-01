@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
+import { FileAttachment } from './entities/file-attachment.entity';
 import { Conversation, ConversationType } from './entities/conversation.entity';
 import { CreateMessageDto } from './dto/message.dto';
 import { CreateConversationDto } from './dto/conversation.dto';
@@ -13,6 +14,8 @@ export class ChatService {
   constructor(
     @InjectRepository(Message)
     private messageRepository: Repository<Message>,
+    @InjectRepository(FileAttachment)
+    private attachmentRepository: Repository<FileAttachment>,
     @InjectRepository(Conversation)
     private conversationRepository: Repository<Conversation>,
   ) {}
@@ -419,6 +422,75 @@ export class ChatService {
     ];
 
     return this.conversationRepository.save(newConversation);
+  }
+
+  // ============ FILE ATTACHMENT METHODS ============
+
+  /**
+   * Validate user has access to conversation before uploading
+   */
+  async validateUserInConversation(
+    userId: string,
+    conversationId: string,
+  ): Promise<void> {
+    const conversation = await this.conversationRepository.findOne({
+      where: { conversation_id: conversationId },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    // Check if user is participant (or it's a group chat)
+    const isParticipant = this.isUserParticipant(conversation.participant_ids, userId);
+    const isGroupChat = conversation.type === ConversationType.GROUP;
+
+    if (!isParticipant && !isGroupChat) {
+      throw new BadRequestException('User is not allowed to upload files to this conversation');
+    }
+  }
+
+  /**
+   * Save file attachment to database
+   */
+  async saveFileAttachment(
+    messageId: string,
+    attachmentData: any,
+  ): Promise<FileAttachment> {
+    const attachment = this.attachmentRepository.create({
+      message_id: messageId,
+      filename: attachmentData.filename,
+      file_type: attachmentData.file_type,
+      file_size: attachmentData.file_size,
+      file_url: attachmentData.file_url,
+      preview_url: attachmentData.preview_url,
+    });
+
+    return this.attachmentRepository.save(attachment);
+  }
+
+  /**
+   * Delete file attachment
+   */
+  async deleteAttachment(attachmentId: string): Promise<void> {
+    const attachment = await this.attachmentRepository.findOne({
+      where: { attachment_id: attachmentId },
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Attachment not found');
+    }
+
+    await this.attachmentRepository.remove(attachment);
+  }
+
+  /**
+   * Get attachments for a message
+   */
+  async getMessageAttachments(messageId: string): Promise<FileAttachment[]> {
+    return this.attachmentRepository.find({
+      where: { message_id: messageId },
+    });
   }
 
 }

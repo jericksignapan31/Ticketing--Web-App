@@ -22,6 +22,7 @@ import { AssetAssignmentHistory } from './entities/asset-assignment-history.enti
 import { AssetMovementHistory } from './entities/asset-movement-history.entity';
 import { Message } from './chat/entities/message.entity';
 import { Conversation } from './chat/entities/conversation.entity';
+import { FileAttachment } from './chat/entities/file-attachment.entity';
 import { AuthModule } from './auth/auth.module';
 import { EmployeeModule } from './employee/employee.module';
 import { BranchModule } from './branch/branch.module';
@@ -75,6 +76,7 @@ import { WarehouseModule } from './warehouse/warehouse.module';
           AssetMovementHistory,
           Message,
           Conversation,
+          FileAttachment,
         ],
         migrations: ['dist/migrations/*.js'],
         migrationsRun: true,
