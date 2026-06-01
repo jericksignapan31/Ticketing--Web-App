@@ -104,7 +104,7 @@ export class RequisitionService {
       });
 
       return savedRequisition;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error creating requisition:', error);
       throw new BadRequestException(`Failed to create requisition: ${error.message}`);
     }
@@ -170,14 +170,15 @@ export class RequisitionService {
     requisition.acknowledged_at = new Date();
     requisition.acknowledged_notes = acknowledgeRequisitionDto.acknowledged_notes?.trim() || null;
 
-    const updated = await this.requisitionRepository.save(requisition);
+    await this.requisitionRepository.save(requisition);
 
     console.log('✅ Requisition acknowledged:', {
       rf_number,
       acknowledged_by: warehouse_staff_id,
     });
 
-    return updated;
+    // Re-fetch to get updated relations
+    return this.getRequisitionByRF(rf_number);
   }
 
   async approveRequisition(
@@ -206,15 +207,16 @@ export class RequisitionService {
     requisition.approved_at = new Date();
     requisition.rejection_reason = approveDto.rejection_reason?.trim() || null;
 
-    const updated = await this.requisitionRepository.save(requisition);
+    await this.requisitionRepository.save(requisition);
 
     console.log('✅ Requisition approved:', {
       rf_number,
-      status: updated.status,
+      status: requisition.status,
       approved_by: admin_id,
     });
 
-    return updated;
+    // Re-fetch to get updated relations
+    return this.getRequisitionByRF(rf_number);
   }
 
   async getMyRequisitions(requester_id: string): Promise<PartRequisition[]> {
