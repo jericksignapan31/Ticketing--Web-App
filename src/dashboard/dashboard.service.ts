@@ -255,7 +255,7 @@ export class DashboardService {
       const departmentResult = await this.dataSource.query(`
         SELECT 
           d.department_id,
-          d."name" as department_name,
+          d.department_name,
           COUNT(t.ticket_id)::INTEGER as ticket_count,
           COUNT(CASE WHEN t.status = 'open' THEN 1 END)::INTEGER as open_count,
           COUNT(CASE WHEN t.status = 'in-progress' THEN 1 END)::INTEGER as in_progress_count,
@@ -263,10 +263,10 @@ export class DashboardService {
           COUNT(CASE WHEN t.status = 'closed' THEN 1 END)::INTEGER as closed_count
         FROM "department" d
         LEFT JOIN "employee" e ON d.department_id = e.department_id
-        LEFT JOIN "ticket" t ON e.employee_id = t.reporter_id
+        LEFT JOIN "ticket" t ON e.employee_id = t.employee_id
           AND EXTRACT(MONTH FROM t."created_at") = $1
           AND EXTRACT(YEAR FROM t."created_at") = $2
-        GROUP BY d.department_id, d."name"
+        GROUP BY d.department_id, d.department_name
         ORDER BY ticket_count DESC
       `, [targetMonth, targetYear]);
 
@@ -316,11 +316,11 @@ export class DashboardService {
           COUNT(*)::INTEGER as count,
           COALESCE(SUM(COALESCE(
             (SELECT SUM(CAST(ri.total_cost AS NUMERIC))
-             FROM "requisition_item" ri
+             FROM "requisition_items" ri
              WHERE ri.requisition_id = pr.requisition_id),
             0
           )), 0)::NUMERIC as total_costing
-        FROM "part_requisition" pr
+        FROM "part_requisitions" pr
         WHERE EXTRACT(MONTH FROM "created_at") = $1
         AND EXTRACT(YEAR FROM "created_at") = $2
       `, [targetMonth, targetYear]);
@@ -332,22 +332,22 @@ export class DashboardService {
       const departmentResult = await this.dataSource.query(`
         SELECT 
           d.department_id,
-          d."name" as department_name,
+          d.department_name,
           COUNT(pr.requisition_id)::INTEGER as requisition_count,
           COUNT(CASE WHEN pr.status = 'approved' THEN 1 END)::INTEGER as approved_count,
           COUNT(CASE WHEN pr.status = 'pending' THEN 1 END)::INTEGER as pending_count,
           COALESCE(SUM(COALESCE(
             (SELECT SUM(CAST(ri.total_cost AS NUMERIC))
-             FROM "requisition_item" ri
+             FROM "requisition_items" ri
              WHERE ri.requisition_id = pr.requisition_id),
             0
           )), 0)::NUMERIC as total_costing
         FROM "department" d
         LEFT JOIN "employee" e ON d.department_id = e.department_id
-        LEFT JOIN "part_requisition" pr ON e.employee_id = pr.created_by
+        LEFT JOIN "part_requisitions" pr ON e.employee_id = pr.requested_by
           AND EXTRACT(MONTH FROM pr."created_at") = $1
           AND EXTRACT(YEAR FROM pr."created_at") = $2
-        GROUP BY d.department_id, d."name"
+        GROUP BY d.department_id, d.department_name
         ORDER BY total_costing DESC
       `, [targetMonth, targetYear]);
 
