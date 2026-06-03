@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { DashboardStatsDto } from './dashboard.dto';
+import {
+  DashboardStatsDto,
+  OperationalDashboardDto,
+  TacticalDashboardDto,
+  DepartmentTicketMetricDto,
+  DepartmentRequisitionMetricDto,
+} from './dashboard.dto';
 
 @Injectable()
 export class DashboardService {
@@ -211,6 +217,170 @@ export class DashboardService {
         fair: 0,
         poor: 0,
         broken: 0,
+      };
+    }
+  }
+
+  async getOperationalDashboard(
+    month?: number,
+    year?: number,
+  ): Promise<OperationalDashboardDto> {
+    const now = new Date();
+    const targetMonth = month || now.getMonth() + 1;
+    const targetYear = year || now.getFullYear();
+
+    try {
+      // Get total tickets for the month
+      const totalResult = await this.dataSource.query(`
+        SELECT COUNT(*)::INTEGER as count
+        FROM "ticket"
+        WHERE EXTRACT(MONTH FROM "created_at") = $1
+        AND EXTRACT(YEAR FROM "created_at") = $2
+      `, [targetMonth, targetYear]);
+
+      const total_tickets = totalResult?.[0]?.count ?? 0;
+
+      // Get open tickets for the month
+      const openResult = await this.dataSource.query(`
+        SELECT COUNT(*)::INTEGER as count
+        FROM "ticket"
+        WHERE EXTRACT(MONTH FROM "created_at") = $1
+        AND EXTRACT(YEAR FROM "created_at") = $2
+        AND "status" != $3
+      `, [targetMonth, targetYear, 'closed']);
+
+      const total_open_tickets = openResult?.[0]?.count ?? 0;
+
+      // Get tickets by department with status breakdown
+      const departmentResult = await this.dataSource.query(`
+        SELECT 
+          d.department_id,
+          d."name" as department_name,
+          COUNT(t.ticket_id)::INTEGER as ticket_count,
+          COUNT(CASE WHEN t.status = 'open' THEN 1 END)::INTEGER as open_count,
+          COUNT(CASE WHEN t.status = 'in-progress' THEN 1 END)::INTEGER as in_progress_count,
+          COUNT(CASE WHEN t.status = 'resolved' THEN 1 END)::INTEGER as resolved_count,
+          COUNT(CASE WHEN t.status = 'closed' THEN 1 END)::INTEGER as closed_count
+        FROM "department" d
+        LEFT JOIN "employee" e ON d.department_id = e.department_id
+        LEFT JOIN "ticket" t ON e.employee_id = t.reporter_id
+          AND EXTRACT(MONTH FROM t."created_at") = $1
+          AND EXTRACT(YEAR FROM t."created_at") = $2
+        GROUP BY d.department_id, d."name"
+        ORDER BY ticket_count DESC
+      `, [targetMonth, targetYear]);
+
+      const department_metrics: DepartmentTicketMetricDto[] = departmentResult.map(
+        (row) => ({
+          department_id: row.department_id,
+          department_name: row.department_name,
+          ticket_count: row.ticket_count || 0,
+          open_count: row.open_count || 0,
+          in_progress_count: row.in_progress_count || 0,
+          resolved_count: row.resolved_count || 0,
+          closed_count: row.closed_count || 0,
+        }),
+      );
+
+      return {
+        month: targetMonth,
+        year: targetYear,
+        total_tickets,
+        total_open_tickets,
+        department_metrics,
+      };
+    } catch (error) {
+      console.error('Error fetching operational dashboard:', error);
+      return {
+        month: targetMonth,
+        year: targetYear,
+        total_tickets: 0,
+        total_open_tickets: 0,
+        department_metrics: [],
+      };
+    }
+  }
+
+  async getTacticalDashboard(
+    month?: number,
+    year?: number,
+  ): Promise<TacticalDashboardDto> {
+    const now = new Date();
+    const targetMonth = month || now.getMonth() + 1;
+    const targetYear = year || now.getFullYear();
+
+    try {
+      // Get total requisitions and costing for the month
+      const totalResult = await this.dataSource.query(`
+        SELECT 
+          COUNT(*)::INTEGER as count,
+          COALESCE(SUM(COALESCE(
+            (SELECT SUM(CAST(ri.total_cost AS NUMERIC))
+             FROM "requisition_item" ri
+             WHERE ri.requisition_id = pr.requisition_id),
+            0
+          )), 0)::NUMERIC as total_costing
+        FROM "part_requisition" pr
+        WHERE EXTRACT(MONTH FROM "created_at") = $1
+        AND EXTRACT(YEAR FROM "created_at") = $2
+      `, [targetMonth, targetYear]);
+
+      const total_requisitions = totalResult?.[0]?.count ?? 0;
+      const total_costing = parseFloat(totalResult?.[0]?.total_costing ?? 0);
+
+      // Get requisitions by department with costing
+      const departmentResult = await this.dataSource.query(`
+        SELECT 
+          d.department_id,
+          d."name" as department_name,
+          COUNT(pr.requisition_id)::INTEGER as requisition_count,
+          COUNT(CASE WHEN pr.status = 'approved' THEN 1 END)::INTEGER as approved_count,
+          COUNT(CASE WHEN pr.status = 'pending' THEN 1 END)::INTEGER as pending_count,
+          COALESCE(SUM(COALESCE(
+            (SELECT SUM(CAST(ri.total_cost AS NUMERIC))
+             FROM "requisition_item" ri
+             WHERE ri.requisition_id = pr.requisition_id),
+            0
+          )), 0)::NUMERIC as total_costing
+        FROM "department" d
+        LEFT JOIN "employee" e ON d.department_id = e.department_id
+        LEFT JOIN "part_requisition" pr ON e.employee_id = pr.created_by
+          AND EXTRACT(MONTH FROM pr."created_at") = $1
+          AND EXTRACT(YEAR FROM pr."created_at") = $2
+        GROUP BY d.department_id, d."name"
+        ORDER BY total_costing DESC
+      `, [targetMonth, targetYear]);
+
+      const department_metrics: DepartmentRequisitionMetricDto[] = departmentResult.map(
+        (row) => ({
+          department_id: row.department_id,
+          department_name: row.department_name,
+          requisition_count: row.requisition_count || 0,
+          approved_count: row.approved_count || 0,
+          pending_count: row.pending_count || 0,
+          total_costing: parseFloat(row.total_costing || 0),
+          average_costing:
+            (row.requisition_count || 0) > 0
+              ? parseFloat(row.total_costing || 0) / (row.requisition_count || 1)
+              : 0,
+        }),
+      );
+
+      return {
+        month: targetMonth,
+        year: targetYear,
+        total_requisitions,
+        total_costing,
+        department_metrics,
+      };
+    } catch (error) {
+      console.error('Error fetching tactical dashboard:', error);
+      return {
+        month: targetMonth,
+        year: targetYear,
+        total_requisitions: 0,
+        total_costing: 0,
+        department_metrics: [],
       };
     }
   }
