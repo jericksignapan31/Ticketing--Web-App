@@ -263,7 +263,7 @@ export class DashboardService {
           COUNT(CASE WHEN t.status = 'closed' THEN 1 END)::INTEGER as closed_count
         FROM "department" d
         LEFT JOIN "employee" e ON d.department_id = e.department_id
-        LEFT JOIN "ticket" t ON e.employee_id = t.employee_id
+        LEFT JOIN "ticket" t ON e.employee_id = CAST(t.employee_id AS UUID)
           AND EXTRACT(MONTH FROM t."created_at") = $1
           AND EXTRACT(YEAR FROM t."created_at") = $2
         GROUP BY d.department_id, d.department_name
@@ -344,7 +344,7 @@ export class DashboardService {
           )), 0)::NUMERIC as total_costing
         FROM "department" d
         LEFT JOIN "employee" e ON d.department_id = e.department_id
-        LEFT JOIN "part_requisitions" pr ON e.employee_id = pr.requested_by
+        LEFT JOIN "part_requisitions" pr ON e.employee_id = CAST(pr.requested_by AS UUID)
           AND EXTRACT(MONTH FROM pr."created_at") = $1
           AND EXTRACT(YEAR FROM pr."created_at") = $2
         GROUP BY d.department_id, d.department_name
