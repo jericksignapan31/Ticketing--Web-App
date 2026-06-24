@@ -363,7 +363,7 @@ export class TicketService {
       });
     } catch (error) {
       // Fallback: if parts relation doesn't exist, load without it
-      console.warn('⚠️  Could not load parts relation:', error.message);
+     
       return await this.ticketRepository.find({
         where,
         relations: [
