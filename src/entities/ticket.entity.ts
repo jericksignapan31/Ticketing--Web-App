@@ -11,6 +11,7 @@ import {
 import { Employee } from './employee.entity';
 import { Asset } from './asset.entity';
 import { TicketParts } from './ticket-parts.entity';
+import { Department } from './department.entity';
 
 @Entity('ticket')
 export class Ticket {
@@ -93,6 +94,10 @@ export class Ticket {
   @ManyToOne(() => Asset)
   @JoinColumn({ name: 'asset_id' })
   asset?: Asset;
+
+  @ManyToOne(() => Department)
+  @JoinColumn({ name: 'department_id' })
+  department?: Department;
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'assigned_to' })
