@@ -298,6 +298,7 @@ export class TicketService {
         'asset',
         'asset.brand',
         'asset.branch',
+        'department',
       ],
       order: { created_at: 'DESC' },
     });
