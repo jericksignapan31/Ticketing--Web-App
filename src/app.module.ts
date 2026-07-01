@@ -12,6 +12,7 @@ import { Department } from './entities/department.entity';
 import { Brand } from './entities/brand.entity';
 import { Asset } from './entities/asset.entity';
 import { Ticket } from './entities/ticket.entity';
+import { TicketSequence } from './entities/ticket-sequence.entity';
 import { TicketParts } from './entities/ticket-parts.entity';
 import { WarehousePartRequest } from './entities/warehouse-part-request.entity';
 import { PartRequisition } from './entities/part-requisition.entity';
@@ -66,6 +67,7 @@ import { WarehouseModule } from './warehouse/warehouse.module';
           Brand,
           Asset,
           Ticket,
+          TicketSequence,
           TicketParts,
           WarehousePartRequest,
           PartRequisition,
