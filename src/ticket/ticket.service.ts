@@ -230,59 +230,149 @@ export class TicketService {
   // Specific status endpoints for frontend
   async findPending(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'pending_approval' };
+    
+    const query = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.asset', 'asset')
+      .leftJoinAndSelect('asset.brand', 'brand')
+      .leftJoinAndSelect('asset.branch', 'branch')
+      .where('ticket.status = :status', { status: 'pending_approval' });
     
     if (departmentFilter) {
-      where.department_id = departmentFilter;
+      query.andWhere('ticket.department_id = :departmentId', { departmentId: departmentFilter });
     }
-
-    return await this.ticketRepository.find({
-      where,
-      relations: [
-        'asset',
-        'asset.brand',
-        'asset.branch',
-      ],
-      order: { created_at: 'DESC' },
-    });
+    
+    const tickets = await query.orderBy('ticket.created_at', 'DESC').getMany();
+    
+    // Manually load department and employee data
+    if (tickets.length > 0) {
+      const departmentIds = [...new Set(tickets.map(t => t.department_id).filter(Boolean))];
+      const employeeIds = [...new Set(tickets.map(t => t.employee_id).filter(Boolean))];
+      
+      if (departmentIds.length > 0) {
+        const departments = await this.ticketRepository.manager.find(Department, {
+          where: { department_id: In(departmentIds as string[]) },
+        });
+        const deptMap = Object.fromEntries(departments.map(d => [d.department_id, d]));
+        tickets.forEach(ticket => {
+          if (ticket.department_id && deptMap[ticket.department_id]) {
+            ticket.department = deptMap[ticket.department_id];
+          }
+        });
+      }
+      
+      if (employeeIds.length > 0) {
+        const employees = await this.ticketRepository.manager.find(Employee, {
+          where: { employee_id: In(employeeIds as string[]) },
+        });
+        const empMap = Object.fromEntries(employees.map(e => [e.employee_id, e]));
+        tickets.forEach(ticket => {
+          if (ticket.employee_id && empMap[ticket.employee_id]) {
+            ticket.reporter = empMap[ticket.employee_id];
+          }
+        });
+      }
+    }
+    
+    return tickets;
   }
 
   async findInProgress(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'in_progress' };
+    
+    const query = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.asset', 'asset')
+      .leftJoinAndSelect('asset.brand', 'brand')
+      .leftJoinAndSelect('asset.branch', 'branch')
+      .where('ticket.status = :status', { status: 'in_progress' });
     
     if (departmentFilter) {
-      where.department_id = departmentFilter;
+      query.andWhere('ticket.department_id = :departmentId', { departmentId: departmentFilter });
     }
-
-    return await this.ticketRepository.find({
-      where,
-      relations: [
-        'asset',
-        'asset.brand',
-        'asset.branch',
-      ],
-      order: { created_at: 'DESC' },
-    });
+    
+    const tickets = await query.orderBy('ticket.created_at', 'DESC').getMany();
+    
+    // Manually load department and employee data
+    if (tickets.length > 0) {
+      const departmentIds = [...new Set(tickets.map(t => t.department_id).filter(Boolean))];
+      const employeeIds = [...new Set(tickets.map(t => t.employee_id).filter(Boolean))];
+      
+      if (departmentIds.length > 0) {
+        const departments = await this.ticketRepository.manager.find(Department, {
+          where: { department_id: In(departmentIds as string[]) },
+        });
+        const deptMap = Object.fromEntries(departments.map(d => [d.department_id, d]));
+        tickets.forEach(ticket => {
+          if (ticket.department_id && deptMap[ticket.department_id]) {
+            ticket.department = deptMap[ticket.department_id];
+          }
+        });
+      }
+      
+      if (employeeIds.length > 0) {
+        const employees = await this.ticketRepository.manager.find(Employee, {
+          where: { employee_id: In(employeeIds as string[]) },
+        });
+        const empMap = Object.fromEntries(employees.map(e => [e.employee_id, e]));
+        tickets.forEach(ticket => {
+          if (ticket.employee_id && empMap[ticket.employee_id]) {
+            ticket.reporter = empMap[ticket.employee_id];
+          }
+        });
+      }
+    }
+    
+    return tickets;
   }
 
   async findCompleted(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'resolved' };
+    
+    const query = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.asset', 'asset')
+      .leftJoinAndSelect('asset.brand', 'brand')
+      .leftJoinAndSelect('asset.branch', 'branch')
+      .where('ticket.status = :status', { status: 'resolved' });
     
     if (departmentFilter) {
-      where.department_id = departmentFilter;
+      query.andWhere('ticket.department_id = :departmentId', { departmentId: departmentFilter });
     }
-
-    return await this.ticketRepository.find({
-      where,
-      relations: [
-        'asset',
-        'asset.brand',
-        'asset.branch',
-      ],
-      order: { created_at: 'DESC' },
-    });
+    
+    const tickets = await query.orderBy('ticket.created_at', 'DESC').getMany();
+    
+    // Manually load department and employee data
+    if (tickets.length > 0) {
+      const departmentIds = [...new Set(tickets.map(t => t.department_id).filter(Boolean))];
+      const employeeIds = [...new Set(tickets.map(t => t.employee_id).filter(Boolean))];
+      
+      if (departmentIds.length > 0) {
+        const departments = await this.ticketRepository.manager.find(Department, {
+          where: { department_id: In(departmentIds as string[]) },
+        });
+        const deptMap = Object.fromEntries(departments.map(d => [d.department_id, d]));
+        tickets.forEach(ticket => {
+          if (ticket.department_id && deptMap[ticket.department_id]) {
+            ticket.department = deptMap[ticket.department_id];
+          }
+        });
+      }
+      
+      if (employeeIds.length > 0) {
+        const employees = await this.ticketRepository.manager.find(Employee, {
+          where: { employee_id: In(employeeIds as string[]) },
+        });
+        const empMap = Object.fromEntries(employees.map(e => [e.employee_id, e]));
+        tickets.forEach(ticket => {
+          if (ticket.employee_id && empMap[ticket.employee_id]) {
+            ticket.reporter = empMap[ticket.employee_id];
+          }
+        });
+      }
+    }
+    
+    return tickets;
   }
 
   async findApproved(user: any): Promise<Ticket[]> {
@@ -336,75 +426,149 @@ export class TicketService {
 
   async findAssigned(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'assigned' };
+    
+    const query = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.asset', 'asset')
+      .leftJoinAndSelect('asset.brand', 'brand')
+      .leftJoinAndSelect('asset.branch', 'branch')
+      .where('ticket.status = :status', { status: 'assigned' });
     
     if (departmentFilter) {
-      where.department_id = departmentFilter;
+      query.andWhere('ticket.department_id = :departmentId', { departmentId: departmentFilter });
     }
-
-    return await this.ticketRepository.find({
-      where,
-      relations: [
-        'asset',
-        'asset.brand',
-        'asset.branch',
-      ],
-      order: { created_at: 'DESC' },
-    });
+    
+    const tickets = await query.orderBy('ticket.created_at', 'DESC').getMany();
+    
+    // Manually load department and employee data
+    if (tickets.length > 0) {
+      const departmentIds = [...new Set(tickets.map(t => t.department_id).filter(Boolean))];
+      const employeeIds = [...new Set(tickets.map(t => t.employee_id).filter(Boolean))];
+      
+      if (departmentIds.length > 0) {
+        const departments = await this.ticketRepository.manager.find(Department, {
+          where: { department_id: In(departmentIds as string[]) },
+        });
+        const deptMap = Object.fromEntries(departments.map(d => [d.department_id, d]));
+        tickets.forEach(ticket => {
+          if (ticket.department_id && deptMap[ticket.department_id]) {
+            ticket.department = deptMap[ticket.department_id];
+          }
+        });
+      }
+      
+      if (employeeIds.length > 0) {
+        const employees = await this.ticketRepository.manager.find(Employee, {
+          where: { employee_id: In(employeeIds as string[]) },
+        });
+        const empMap = Object.fromEntries(employees.map(e => [e.employee_id, e]));
+        tickets.forEach(ticket => {
+          if (ticket.employee_id && empMap[ticket.employee_id]) {
+            ticket.reporter = empMap[ticket.employee_id];
+          }
+        });
+      }
+    }
+    
+    return tickets;
   }
 
   async findRejected(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'rejected' };
+    
+    const query = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.asset', 'asset')
+      .leftJoinAndSelect('asset.brand', 'brand')
+      .leftJoinAndSelect('asset.branch', 'branch')
+      .where('ticket.status = :status', { status: 'rejected' });
     
     if (departmentFilter) {
-      where.department_id = departmentFilter;
+      query.andWhere('ticket.department_id = :departmentId', { departmentId: departmentFilter });
     }
-
-    return await this.ticketRepository.find({
-      where,
-      relations: [
-        'asset',
-        'asset.brand',
-        'asset.branch',
-      ],
-      order: { created_at: 'DESC' },
-    });
+    
+    const tickets = await query.orderBy('ticket.created_at', 'DESC').getMany();
+    
+    // Manually load department and employee data
+    if (tickets.length > 0) {
+      const departmentIds = [...new Set(tickets.map(t => t.department_id).filter(Boolean))];
+      const employeeIds = [...new Set(tickets.map(t => t.employee_id).filter(Boolean))];
+      
+      if (departmentIds.length > 0) {
+        const departments = await this.ticketRepository.manager.find(Department, {
+          where: { department_id: In(departmentIds as string[]) },
+        });
+        const deptMap = Object.fromEntries(departments.map(d => [d.department_id, d]));
+        tickets.forEach(ticket => {
+          if (ticket.department_id && deptMap[ticket.department_id]) {
+            ticket.department = deptMap[ticket.department_id];
+          }
+        });
+      }
+      
+      if (employeeIds.length > 0) {
+        const employees = await this.ticketRepository.manager.find(Employee, {
+          where: { employee_id: In(employeeIds as string[]) },
+        });
+        const empMap = Object.fromEntries(employees.map(e => [e.employee_id, e]));
+        tickets.forEach(ticket => {
+          if (ticket.employee_id && empMap[ticket.employee_id]) {
+            ticket.reporter = empMap[ticket.employee_id];
+          }
+        });
+      }
+    }
+    
+    return tickets;
   }
 
   async findWaitingForParts(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'hold' };
+    
+    const query = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.asset', 'asset')
+      .leftJoinAndSelect('asset.brand', 'brand')
+      .leftJoinAndSelect('asset.branch', 'branch')
+      .where('ticket.status = :status', { status: 'hold' });
     
     if (departmentFilter) {
-      where.department_id = departmentFilter;
+      query.andWhere('ticket.department_id = :departmentId', { departmentId: departmentFilter });
     }
-
-    try {
-      // Try to load with parts relation
-      return await this.ticketRepository.find({
-        where,
-        relations: [
-          'asset',
-          'asset.brand',
-          'asset.branch',
-          'parts',
-        ],
-        order: { created_at: 'DESC' },
-      });
-    } catch (error) {
-      // Fallback: if parts relation doesn't exist, load without it
-     
-      return await this.ticketRepository.find({
-        where,
-        relations: [
-          'asset',
-          'asset.brand',
-          'asset.branch',
-        ],
-        order: { created_at: 'DESC' },
-      });
+    
+    const tickets = await query.orderBy('ticket.created_at', 'DESC').getMany();
+    
+    // Manually load department and employee data
+    if (tickets.length > 0) {
+      const departmentIds = [...new Set(tickets.map(t => t.department_id).filter(Boolean))];
+      const employeeIds = [...new Set(tickets.map(t => t.employee_id).filter(Boolean))];
+      
+      if (departmentIds.length > 0) {
+        const departments = await this.ticketRepository.manager.find(Department, {
+          where: { department_id: In(departmentIds as string[]) },
+        });
+        const deptMap = Object.fromEntries(departments.map(d => [d.department_id, d]));
+        tickets.forEach(ticket => {
+          if (ticket.department_id && deptMap[ticket.department_id]) {
+            ticket.department = deptMap[ticket.department_id];
+          }
+        });
+      }
+      
+      if (employeeIds.length > 0) {
+        const employees = await this.ticketRepository.manager.find(Employee, {
+          where: { employee_id: In(employeeIds as string[]) },
+        });
+        const empMap = Object.fromEntries(employees.map(e => [e.employee_id, e]));
+        tickets.forEach(ticket => {
+          if (ticket.employee_id && empMap[ticket.employee_id]) {
+            ticket.reporter = empMap[ticket.employee_id];
+          }
+        });
+      }
     }
+    
+    return tickets;
   }
 
   async approveTicket(
