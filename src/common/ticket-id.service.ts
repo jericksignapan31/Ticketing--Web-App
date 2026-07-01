@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { TicketSequence } from '../entities/ticket-sequence.entity';
 
 @Injectable()
 export class TicketIdService {
@@ -9,15 +10,23 @@ export class TicketIdService {
     const today = new Date();
     const dateStr = today.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
 
-    // Get the count of tickets created today
-    const result = await this.dataSource.query(
-      `SELECT COUNT(*) as count FROM ticket 
-       WHERE DATE(created_at) = CURRENT_DATE`,
-    );
+    const sequenceRepository = this.dataSource.getRepository(TicketSequence);
 
-    const count = parseInt(result[0].count, 10) + 1;
-    const sequence = String(count).padStart(4, '0'); // 0001, 0002, etc.
+    // Upsert the sequence for today's date
+    let sequence = await sequenceRepository.findOne({
+      where: { date: dateStr },
+    });
 
-    return `IT-${dateStr}-${sequence}`;
+    if (!sequence) {
+      // Create new sequence for today
+      sequence = sequenceRepository.create({ date: dateStr, sequence: 0 });
+    }
+
+    // Increment sequence
+    sequence.sequence += 1;
+    await sequenceRepository.save(sequence);
+
+    const sequenceStr = String(sequence.sequence).padStart(4, '0');
+    return `IT-${dateStr}-${sequenceStr}`;
   }
 }

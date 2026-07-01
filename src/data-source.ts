@@ -8,6 +8,7 @@ import { Brand } from './entities/brand.entity';
 import { Asset } from './entities/asset.entity';
 import { Ticket } from './entities/ticket.entity';
 import { TicketParts } from './entities/ticket-parts.entity';
+import { TicketSequence } from './entities/ticket-sequence.entity';
 import { WarehousePartRequest } from './entities/warehouse-part-request.entity';
 import { PartRequisition } from './entities/part-requisition.entity';
 import { RequisitionItem } from './entities/requisition-item.entity';
@@ -35,6 +36,7 @@ export const AppDataSource = new DataSource({
     Asset,
     Ticket,
     TicketParts,
+    TicketSequence,
     WarehousePartRequest,
     PartRequisition,
     RequisitionItem,
