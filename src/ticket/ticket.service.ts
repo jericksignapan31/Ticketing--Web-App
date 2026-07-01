@@ -4,9 +4,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, In } from 'typeorm';
 import { Ticket } from '../entities/ticket.entity';
 import { Employee } from '../entities/employee.entity';
+import { Department } from '../entities/department.entity';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { ApproveTicketDto } from './dto/approve-ticket.dto';
@@ -286,21 +287,37 @@ export class TicketService {
 
   async findApproved(user: any): Promise<Ticket[]> {
     const departmentFilter = this.getDepartmentFilter(user);
-    const where: any = { status: 'approved' };
+    
+    const query = this.ticketRepository
+      .createQueryBuilder('ticket')
+      .leftJoinAndSelect('ticket.asset', 'asset')
+      .leftJoinAndSelect('asset.brand', 'brand')
+      .leftJoinAndSelect('asset.branch', 'branch')
+      .where('ticket.status = :status', { status: 'approved' });
     
     if (departmentFilter) {
-      where.department_id = departmentFilter;
+      query.andWhere('ticket.department_id = :departmentId', { departmentId: departmentFilter });
     }
-
-    return await this.ticketRepository.find({
-      where,
-      relations: [
-        'asset',
-        'asset.brand',
-        'asset.branch',
-      ],
-      order: { created_at: 'DESC' },
-    });
+    
+    const tickets = await query.orderBy('ticket.created_at', 'DESC').getMany();
+    
+    // Manually attach department data to avoid type mismatch issues
+    if (tickets.length > 0) {
+      const departmentIds = [...new Set(tickets.map(t => t.department_id).filter(Boolean))];
+      if (departmentIds.length > 0) {
+        const departments = await this.ticketRepository.manager.find(Department, {
+          where: { department_id: In(departmentIds as string[]) },
+        });
+        const deptMap = Object.fromEntries(departments.map(d => [d.department_id, d]));
+        tickets.forEach(ticket => {
+          if (ticket.department_id && deptMap[ticket.department_id]) {
+            ticket.department = deptMap[ticket.department_id];
+          }
+        });
+      }
+    }
+    
+    return tickets;
   }
 
   async findAssigned(user: any): Promise<Ticket[]> {

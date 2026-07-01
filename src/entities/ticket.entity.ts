@@ -21,7 +21,7 @@ export class Ticket {
   @Column()
   employee_id!: string;
 
-  @Column({ nullable: true })
+  @Column('uuid', { nullable: true })
   department_id?: string;
 
   @Column({ nullable: true })
