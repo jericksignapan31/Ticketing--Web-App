@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   ManyToOne,
   OneToMany,
@@ -15,7 +15,7 @@ import { Department } from './department.entity';
 
 @Entity('ticket')
 export class Ticket {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('varchar', { length: 20 })
   ticket_id!: string;
 
   @Column()

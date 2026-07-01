@@ -14,7 +14,7 @@ export class TicketParts {
   @PrimaryGeneratedColumn('uuid')
   part_id!: string;
 
-  @Column()
+  @Column('varchar', { length: 20 })
   ticket_id!: string;
 
   @Column()

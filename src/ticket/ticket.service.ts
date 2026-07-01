@@ -16,6 +16,7 @@ import { StartWorkDto } from './dto/start-work.dto';
 import { CompleteTicketDto } from './dto/complete-ticket.dto';
 import { ResumeFromHoldDto } from './dto/resume-from-hold.dto';
 import { TicketPartsService } from './ticket-parts.service';
+import { TicketIdService } from '../common/ticket-id.service';
 import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class TicketService {
     @InjectRepository(Employee)
     private employeeRepository: Repository<Employee>,
     private ticketPartsService: TicketPartsService,
+    private ticketIdService: TicketIdService,
   ) {}
 
   /**
@@ -42,12 +44,18 @@ export class TicketService {
   }
 
   async create(createTicketDto: CreateTicketDto): Promise<Ticket> {
+    // Generate new ticket ID with format IT-YYYYMMDD-XXXX
+    const ticket_id = await this.ticketIdService.generateTicketId();
+
     // Get the employee's department
     const employee = await this.employeeRepository.findOne({
       where: { employee_id: createTicketDto.employee_id },
     });
 
-    const ticket = this.ticketRepository.create(createTicketDto);
+    const ticket = this.ticketRepository.create({
+      ...createTicketDto,
+      ticket_id, // Set the generated ID
+    });
     
     // Auto-populate department_id from employee's department
     if (employee && employee.department_id) {
