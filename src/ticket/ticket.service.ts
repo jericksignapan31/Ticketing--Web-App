@@ -301,9 +301,11 @@ export class TicketService {
     
     const tickets = await query.orderBy('ticket.created_at', 'DESC').getMany();
     
-    // Manually attach department data to avoid type mismatch issues
+    // Manually attach department and employee data to avoid type mismatch issues
     if (tickets.length > 0) {
       const departmentIds = [...new Set(tickets.map(t => t.department_id).filter(Boolean))];
+      const employeeIds = [...new Set(tickets.map(t => t.employee_id).filter(Boolean))];
+      
       if (departmentIds.length > 0) {
         const departments = await this.ticketRepository.manager.find(Department, {
           where: { department_id: In(departmentIds as string[]) },
@@ -312,6 +314,18 @@ export class TicketService {
         tickets.forEach(ticket => {
           if (ticket.department_id && deptMap[ticket.department_id]) {
             ticket.department = deptMap[ticket.department_id];
+          }
+        });
+      }
+      
+      if (employeeIds.length > 0) {
+        const employees = await this.ticketRepository.manager.find(Employee, {
+          where: { employee_id: In(employeeIds as string[]) },
+        });
+        const empMap = Object.fromEntries(employees.map(e => [e.employee_id, e]));
+        tickets.forEach(ticket => {
+          if (ticket.employee_id && empMap[ticket.employee_id]) {
+            ticket.reporter = empMap[ticket.employee_id];
           }
         });
       }
