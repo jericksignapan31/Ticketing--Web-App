@@ -469,7 +469,7 @@ export class RequisitionService {
   async resubmitRequisition(
     rf_number: string,
     it_staff_id: string,
-    _resubmitDto: ResubmitRequisitionDto,
+    resubmitDto: ResubmitRequisitionDto,
   ): Promise<RequisitionReturn> {
     const requisition = await this.getRequisitionByRF(rf_number);
 
@@ -492,9 +492,32 @@ export class RequisitionService {
       throw new NotFoundException('Return record not found for this requisition');
     }
 
+    // Update items if provided
+    if (resubmitDto.edited_items && resubmitDto.edited_items.length > 0) {
+      for (const editedItem of resubmitDto.edited_items) {
+        const item = requisition.items.find(i => i.item_id === editedItem.item_id);
+        if (!item) {
+          throw new BadRequestException(`Item with ID ${editedItem.item_id} not found in requisition`);
+        }
+
+        // Update item fields
+        item.item_name = editedItem.item_name.trim();
+        item.quantity = editedItem.quantity;
+        item.unit = editedItem.unit.trim();
+        item.supplier = editedItem.supplier?.trim() || null;
+        item.unit_cost = editedItem.unit_cost || null;
+        item.total_cost = item.unit_cost && editedItem.quantity ? item.unit_cost * editedItem.quantity : null;
+        item.purpose_remarks = editedItem.purpose_remarks?.trim() || null;
+
+        await this.itemRepository.save(item);
+      }
+      console.log('✅ Updated', resubmitDto.edited_items.length, 'items');
+    }
+
     // Update return record with resubmit info
     latestReturn.resubmitted_by = it_staff_id;
     latestReturn.resubmitted_at = new Date();
+    latestReturn.it_response_notes = resubmitDto.it_response_notes?.trim() || null;
     await this.returnRepository.save(latestReturn);
 
     // Update requisition status back to 'pending' for warehouse to acknowledge again
@@ -508,6 +531,8 @@ export class RequisitionService {
       rf_number,
       resubmitted_by: it_staff_id,
       return_cycle: latestReturn.return_cycle,
+      items_updated: resubmitDto.edited_items?.length || 0,
+      has_response_notes: !!resubmitDto.it_response_notes,
     });
 
     return latestReturn;

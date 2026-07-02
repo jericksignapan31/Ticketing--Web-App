@@ -34,6 +34,9 @@ export class RequisitionReturn {
   @Column('timestamp', { nullable: true })
   resubmitted_at: Date | null;
 
+  @Column('text', { nullable: true })
+  it_response_notes: string | null; // IT's response/notes when resubmitting
+
   @ManyToOne(() => PartRequisition, (req) => req.returns)
   @JoinColumn({ name: 'requisition_id' })
   requisition: PartRequisition;
