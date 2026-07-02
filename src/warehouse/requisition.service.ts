@@ -303,6 +303,18 @@ export class RequisitionService {
       .getMany();
   }
 
+  async getDeclinedRequisitions(): Promise<PartRequisition[]> {
+    return this.requisitionRepository
+      .createQueryBuilder('req')
+      .leftJoinAndSelect('req.items', 'items')
+      .leftJoinAndSelect('req.requester', 'requester')
+      .leftJoinAndSelect('req.approver', 'approver')
+      .leftJoinAndSelect('req.department', 'department')
+      .where('req.status = :status', { status: 'declined_by_admin' })
+      .orderBy('req.declined_at', 'DESC')
+      .getMany();
+  }
+
   async getRequisitionInventory(): Promise<Record<string, any>[]> {
     const requisitions = await this.requisitionRepository
       .createQueryBuilder('req')

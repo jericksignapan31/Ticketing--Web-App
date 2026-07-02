@@ -114,6 +114,18 @@ export class RequisitionController {
     return this.requisitionService.getApprovedRequisitions();
   }
 
+  @Get('declined')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get all declined requisitions (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all requisitions declined by admin with decline reasons',
+  })
+  getDeclinedRequisitions() {
+    return this.requisitionService.getDeclinedRequisitions();
+  }
+
   @Get('inventory')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.WAREHOUSE, UserRole.IT)
