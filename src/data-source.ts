@@ -49,7 +49,7 @@ export const AppDataSource = new DataSource({
     Conversation,
     FileAttachment,
   ],
-  migrations: ['dist/migrations/*.js'],
+  migrations: ['dist/src/migrations/*.js'],
   synchronize: false,
   logging: ['query', 'error', 'warn'],
   migrationsRun: true, // Automatically run migrations on startup
