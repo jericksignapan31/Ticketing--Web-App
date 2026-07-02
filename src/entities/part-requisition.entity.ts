@@ -9,6 +9,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Employee } from './employee.entity';
+import { Department } from './department.entity';
 import { RequisitionItem } from './requisition-item.entity';
 import { RequisitionReturn } from './requisition-return.entity';
 
@@ -23,11 +24,11 @@ export class PartRequisition {
   @Column('uuid')
   requested_by: string; // IT or Warehouse staff who created
 
+  @Column('uuid', { nullable: true })
+  department_id: string | null; // FK to department table
+
   @Column({ type: 'enum', enum: ['it', 'warehouse'], default: 'warehouse' })
   requested_by_type: 'it' | 'warehouse';
-
-  @Column('varchar', { nullable: true })
-  department: string | null;
 
   @Column('timestamp', { nullable: true })
   deadline: Date | null;
@@ -70,6 +71,10 @@ export class PartRequisition {
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'approved_by' })
   approver: Employee;
+
+  @ManyToOne(() => Department)
+  @JoinColumn({ name: 'department_id' })
+  department: Department;
 
   @CreateDateColumn()
   created_at: Date;

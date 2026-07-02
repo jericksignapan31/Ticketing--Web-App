@@ -75,7 +75,7 @@ export class RequisitionService {
         rf_number: createPartRequisitionDto.rf_number.trim(),
         requested_by: requester_id,
         requested_by_type,
-        department: createPartRequisitionDto.department?.trim(),
+        department_id: createPartRequisitionDto.department_id?.trim() || null,
         deadline: createPartRequisitionDto.deadline,
         status: 'pending',
       });
@@ -119,6 +119,7 @@ export class RequisitionService {
       .createQueryBuilder('req')
       .leftJoinAndSelect('req.items', 'items')
       .leftJoinAndSelect('req.requester', 'requester')
+      .leftJoinAndSelect('req.department', 'department')
       .where('req.status = :status', { status: 'pending' });
 
     if (requested_by_type) {
@@ -134,6 +135,7 @@ export class RequisitionService {
       .leftJoinAndSelect('req.items', 'items')
       .leftJoinAndSelect('req.requester', 'requester')
       .leftJoinAndSelect('req.acknowledger', 'acknowledger')
+      .leftJoinAndSelect('req.department', 'department')
       .where('req.status = :status', { status: 'pending_admin_review' })
       .orderBy('req.acknowledged_at', 'DESC')
       .getMany();
@@ -146,6 +148,7 @@ export class RequisitionService {
       .leftJoinAndSelect('req.requester', 'requester')
       .leftJoinAndSelect('req.acknowledger', 'acknowledger')
       .leftJoinAndSelect('req.approver', 'approver')
+      .leftJoinAndSelect('req.department', 'department')
       .where('req.rf_number = :rf_number', { rf_number })
       .getOne();
 
@@ -228,6 +231,7 @@ export class RequisitionService {
       .createQueryBuilder('req')
       .leftJoinAndSelect('req.items', 'items')
       .leftJoinAndSelect('req.requester', 'requester')
+      .leftJoinAndSelect('req.department', 'department')
       .where('req.requested_by = :requester_id', { requester_id })
       .orderBy('req.created_at', 'DESC')
       .getMany();
@@ -240,6 +244,7 @@ export class RequisitionService {
       .leftJoinAndSelect('req.requester', 'requester')
       .leftJoinAndSelect('req.acknowledger', 'acknowledger')
       .leftJoinAndSelect('req.approver', 'approver')
+      .leftJoinAndSelect('req.department', 'department')
       .orderBy('req.created_at', 'DESC')
       .getMany();
   }
@@ -250,6 +255,7 @@ export class RequisitionService {
       .leftJoinAndSelect('req.items', 'items')
       .leftJoinAndSelect('req.requester', 'requester')
       .leftJoinAndSelect('req.approver', 'approver')
+      .leftJoinAndSelect('req.department', 'department')
       .where('req.status = :status', { status: 'approved' })
       .orderBy('req.approved_at', 'DESC')
       .getMany();
@@ -260,6 +266,7 @@ export class RequisitionService {
       .createQueryBuilder('req')
       .leftJoinAndSelect('req.items', 'items')
       .leftJoinAndSelect('req.requester', 'requester')
+      .leftJoinAndSelect('req.department', 'department')
       .orderBy('req.created_at', 'DESC')
       .getMany();
 
@@ -378,6 +385,7 @@ export class RequisitionService {
       .createQueryBuilder('req')
       .leftJoinAndSelect('req.items', 'items')
       .leftJoinAndSelect('req.requester', 'requester')
+      .leftJoinAndSelect('req.department', 'department')
       .leftJoinAndSelect('req.returns', 'returns')
       .leftJoinAndSelect('returns.comments', 'comments')
       .where('req.status = :status', { status: 'returned_by_warehouse' })

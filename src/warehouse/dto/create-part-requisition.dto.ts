@@ -69,13 +69,13 @@ export class CreatePartRequisitionDto {
   rf_number: string;
 
   @ApiProperty({
-    example: 'IT Department',
-    description: 'Department requesting',
+    example: 'a19c815c-1b67-477f-a7c1-62df4b7e04f5',
+    description: 'Department ID requesting (optional)',
     required: false,
   })
   @IsString()
   @IsOptional()
-  department?: string;
+  department_id?: string;
 
   @ApiProperty({
     example: '2026-06-15',
