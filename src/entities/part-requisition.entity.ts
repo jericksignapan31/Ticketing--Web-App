@@ -33,8 +33,8 @@ export class PartRequisition {
   @Column('timestamp', { nullable: true })
   deadline: Date | null;
 
-  @Column({ type: 'enum', enum: ['pending', 'pending_admin_review', 'approved', 'rejected', 'returned_by_warehouse'], default: 'pending' })
-  status: 'pending' | 'pending_admin_review' | 'approved' | 'rejected' | 'returned_by_warehouse';
+  @Column({ type: 'enum', enum: ['pending', 'pending_admin_review', 'approved', 'rejected', 'declined_by_admin', 'returned_by_warehouse'], default: 'pending' })
+  status: 'pending' | 'pending_admin_review' | 'approved' | 'rejected' | 'declined_by_admin' | 'returned_by_warehouse';
 
   @Column('uuid', { nullable: true })
   acknowledged_by: string | null; // Warehouse staff who reviewed
@@ -53,6 +53,12 @@ export class PartRequisition {
 
   @Column('varchar', { nullable: true })
   rejection_reason: string | null;
+
+  @Column('varchar', { nullable: true })
+  decline_reason: string | null;
+
+  @Column('timestamp', { nullable: true })
+  declined_at: Date | null;
 
   @OneToMany(() => RequisitionItem, (item) => item.requisition, { cascade: true })
   items: RequisitionItem[];

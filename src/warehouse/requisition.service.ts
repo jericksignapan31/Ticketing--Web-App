@@ -12,6 +12,7 @@ import { RequisitionComment } from '../entities/requisition-comment.entity';
 import { CreatePartRequisitionDto } from './dto/create-part-requisition.dto';
 import { AcknowledgeRequisitionDto } from './dto/acknowledge-requisition.dto';
 import { ApproveWarehousePartRequestDto } from './dto/approve-warehouse-part-request.dto';
+import { DeclineRequisitionDto } from './dto/decline-requisition.dto';
 import { ReturnRequisitionDto } from './dto/return-requisition.dto';
 import { AddCommentDto } from './dto/add-comment.dto';
 import { ResubmitRequisitionDto } from './dto/resubmit-requisition.dto';
@@ -220,6 +221,47 @@ export class RequisitionService {
       rf_number,
       status: requisition.status,
       approved_by: admin_id,
+    });
+
+    // Re-fetch to get updated relations
+    return this.getRequisitionByRF(rf_number);
+  }
+
+  async declineRequisition(
+    rf_number: string,
+    admin_id: string,
+    declineDto: DeclineRequisitionDto,
+  ): Promise<PartRequisition> {
+    const requisition = await this.getRequisitionByRF(rf_number);
+
+    if (requisition.status !== 'pending_admin_review') {
+      throw new BadRequestException(
+        `Cannot decline requisition with status '${requisition.status}'. Must be pending_admin_review.`,
+      );
+    }
+
+    // Validate decline_reason
+    if (!declineDto.decline_reason || declineDto.decline_reason.trim() === '') {
+      throw new BadRequestException('decline_reason is required when declining');
+    }
+
+    if (declineDto.decline_reason.trim().length < 10) {
+      throw new BadRequestException(
+        `decline_reason must be at least 10 characters long (current: ${declineDto.decline_reason.trim().length} characters)`,
+      );
+    }
+
+    requisition.status = 'declined_by_admin';
+    requisition.approved_by = admin_id;
+    requisition.declined_at = new Date();
+    requisition.decline_reason = declineDto.decline_reason.trim();
+
+    await this.requisitionRepository.save(requisition);
+
+    console.log('✅ Requisition declined:', {
+      rf_number,
+      declined_by: admin_id,
+      reason: declineDto.decline_reason.trim().substring(0, 50) + '...',
     });
 
     // Re-fetch to get updated relations

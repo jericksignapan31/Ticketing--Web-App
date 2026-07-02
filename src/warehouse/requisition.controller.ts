@@ -19,6 +19,7 @@ import { RequisitionService } from './requisition.service';
 import { CreatePartRequisitionDto } from './dto/create-part-requisition.dto';
 import { AcknowledgeRequisitionDto } from './dto/acknowledge-requisition.dto';
 import { ApproveWarehousePartRequestDto } from './dto/approve-warehouse-part-request.dto';
+import { DeclineRequisitionDto } from './dto/decline-requisition.dto';
 import { ReturnRequisitionDto } from './dto/return-requisition.dto';
 import { AddCommentDto } from './dto/add-comment.dto';
 import { ResubmitRequisitionDto } from './dto/resubmit-requisition.dto';
@@ -182,6 +183,22 @@ export class RequisitionController {
     @CurrentUser() user: any,
   ) {
     return this.requisitionService.approveRequisition(rf_number, user.employee_id, approveDto);
+  }
+
+  @Patch(':rf_number/decline')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Decline requisition with reason (Admin only)' })
+  @ApiParam({ name: 'rf_number', description: 'Requisition RF number' })
+  @ApiResponse({ status: 200, description: 'Requisition declined, status changed to declined_by_admin' })
+  @ApiResponse({ status: 400, description: 'Requisition not pending admin review or missing decline reason' })
+  @ApiResponse({ status: 404, description: 'Requisition not found' })
+  declineRequisition(
+    @Param('rf_number') rf_number: string,
+    @Body() declineDto: DeclineRequisitionDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.requisitionService.declineRequisition(rf_number, user.employee_id, declineDto);
   }
 
   @Patch(':rf_number/return')
