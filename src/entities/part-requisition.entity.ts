@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Employee } from './employee.entity';
 import { RequisitionItem } from './requisition-item.entity';
+import { RequisitionReturn } from './requisition-return.entity';
 
 @Entity('part_requisitions')
 export class PartRequisition {
@@ -31,8 +32,8 @@ export class PartRequisition {
   @Column('timestamp', { nullable: true })
   deadline: Date | null;
 
-  @Column({ type: 'enum', enum: ['pending', 'pending_admin_review', 'approved', 'rejected'], default: 'pending' })
-  status: 'pending' | 'pending_admin_review' | 'approved' | 'rejected';
+  @Column({ type: 'enum', enum: ['pending', 'pending_admin_review', 'approved', 'rejected', 'returned_by_warehouse'], default: 'pending' })
+  status: 'pending' | 'pending_admin_review' | 'approved' | 'rejected' | 'returned_by_warehouse';
 
   @Column('uuid', { nullable: true })
   acknowledged_by: string | null; // Warehouse staff who reviewed
@@ -54,6 +55,9 @@ export class PartRequisition {
 
   @OneToMany(() => RequisitionItem, (item) => item.requisition, { cascade: true })
   items: RequisitionItem[];
+
+  @OneToMany(() => RequisitionReturn, (ret) => ret.requisition, { cascade: true })
+  returns: RequisitionReturn[];
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'requested_by' })

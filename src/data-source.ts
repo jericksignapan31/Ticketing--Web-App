@@ -12,6 +12,8 @@ import { TicketSequence } from './entities/ticket-sequence.entity';
 import { WarehousePartRequest } from './entities/warehouse-part-request.entity';
 import { PartRequisition } from './entities/part-requisition.entity';
 import { RequisitionItem } from './entities/requisition-item.entity';
+import { RequisitionReturn } from './entities/requisition-return.entity';
+import { RequisitionComment } from './entities/requisition-comment.entity';
 import { RepairLog } from './entities/repair-log.entity';
 import { Message } from './chat/entities/message.entity';
 import { Conversation } from './chat/entities/conversation.entity';
@@ -40,6 +42,8 @@ export const AppDataSource = new DataSource({
     WarehousePartRequest,
     PartRequisition,
     RequisitionItem,
+    RequisitionReturn,
+    RequisitionComment,
     RepairLog,
     Message,
     Conversation,

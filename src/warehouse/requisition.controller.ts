@@ -19,6 +19,9 @@ import { RequisitionService } from './requisition.service';
 import { CreatePartRequisitionDto } from './dto/create-part-requisition.dto';
 import { AcknowledgeRequisitionDto } from './dto/acknowledge-requisition.dto';
 import { ApproveWarehousePartRequestDto } from './dto/approve-warehouse-part-request.dto';
+import { ReturnRequisitionDto } from './dto/return-requisition.dto';
+import { AddCommentDto } from './dto/add-comment.dto';
+import { ResubmitRequisitionDto } from './dto/resubmit-requisition.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -167,5 +170,99 @@ export class RequisitionController {
     @CurrentUser() user: any,
   ) {
     return this.requisitionService.approveRequisition(rf_number, user.employee_id, approveDto);
+  }
+
+  @Patch(':rf_number/return')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Return requisition with warehouse notes (Warehouse only)' })
+  @ApiParam({ name: 'rf_number', description: 'Requisition RF number' })
+  @ApiResponse({ status: 200, description: 'Requisition returned, status changed to returned_by_warehouse' })
+  @ApiResponse({ status: 400, description: 'Requisition not in valid status for return' })
+  @ApiResponse({ status: 404, description: 'Requisition not found' })
+  returnRequisition(
+    @Param('rf_number') rf_number: string,
+    @Body() returnDto: ReturnRequisitionDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.requisitionService.returnRequisition(
+      rf_number,
+      user.employee_id,
+      returnDto,
+    );
+  }
+
+  @Get('warehouse/pending-returns')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT)
+  @ApiOperation({ summary: 'Get all requisitions pending IT response after warehouse return (IT only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all requisitions with returned_by_warehouse status',
+  })
+  getPendingReturns() {
+    return this.requisitionService.getPendingReturns();
+  }
+
+  @Post(':rf_number/comments')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Add comment to requisition return thread' })
+  @ApiParam({ name: 'rf_number', description: 'Requisition RF number' })
+  @ApiResponse({ status: 201, description: 'Comment added to return thread' })
+  @ApiResponse({ status: 400, description: 'Requisition not in returned status' })
+  @ApiResponse({ status: 404, description: 'Requisition or return record not found' })
+  addComment(
+    @Param('rf_number') rf_number: string,
+    @Body() commentDto: AddCommentDto,
+    @CurrentUser() user: any,
+  ) {
+    // Determine user role from user object
+    const user_role = (user.role === 'warehouse' || user.role === 'it') ? user.role : 'it';
+    return this.requisitionService.addComment(
+      rf_number,
+      user.employee_id,
+      user_role as 'warehouse' | 'it',
+      commentDto,
+    );
+  }
+
+  @Get(':rf_number/comments')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get comment thread for requisition return' })
+  @ApiParam({ name: 'rf_number', description: 'Requisition RF number' })
+  @ApiResponse({ status: 200, description: 'Returns all comments for the requisition return thread' })
+  @ApiResponse({ status: 404, description: 'Requisition not found' })
+  getComments(@Param('rf_number') rf_number: string) {
+    return this.requisitionService.getComments(rf_number);
+  }
+
+  @Patch(':rf_number/resubmit')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT)
+  @ApiOperation({ summary: 'Resubmit requisition after IT edits (IT only)' })
+  @ApiParam({ name: 'rf_number', description: 'Requisition RF number' })
+  @ApiResponse({ status: 200, description: 'Requisition resubmitted, status reset to pending for warehouse acknowledgment' })
+  @ApiResponse({ status: 400, description: 'Requisition not in returned_by_warehouse status' })
+  @ApiResponse({ status: 404, description: 'Requisition or return record not found' })
+  resubmitRequisition(
+    @Param('rf_number') rf_number: string,
+    @Body() resubmitDto: ResubmitRequisitionDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.requisitionService.resubmitRequisition(
+      rf_number,
+      user.employee_id,
+      resubmitDto,
+    );
+  }
+
+  @Get(':rf_number/history')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get full return/resubmit history for requisition' })
+  @ApiParam({ name: 'rf_number', description: 'Requisition RF number' })
+  @ApiResponse({ status: 200, description: 'Returns all return cycles with comments and resubmit timestamps' })
+  @ApiResponse({ status: 404, description: 'Requisition not found' })
+  getRequisitionHistory(@Param('rf_number') rf_number: string) {
+    return this.requisitionService.getRequisitionHistory(rf_number);
   }
 }

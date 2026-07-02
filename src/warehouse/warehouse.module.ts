@@ -7,10 +7,18 @@ import { RequisitionController } from './requisition.controller';
 import { WarehousePartRequest } from '../entities/warehouse-part-request.entity';
 import { PartRequisition } from '../entities/part-requisition.entity';
 import { RequisitionItem } from '../entities/requisition-item.entity';
+import { RequisitionReturn } from '../entities/requisition-return.entity';
+import { RequisitionComment } from '../entities/requisition-comment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([WarehousePartRequest, PartRequisition, RequisitionItem]),
+    TypeOrmModule.forFeature([
+      WarehousePartRequest,
+      PartRequisition,
+      RequisitionItem,
+      RequisitionReturn,
+      RequisitionComment,
+    ]),
   ],
   providers: [WarehouseService, RequisitionService],
   controllers: [WarehouseController, RequisitionController],

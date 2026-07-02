@@ -17,6 +17,8 @@ import { TicketParts } from './entities/ticket-parts.entity';
 import { WarehousePartRequest } from './entities/warehouse-part-request.entity';
 import { PartRequisition } from './entities/part-requisition.entity';
 import { RequisitionItem } from './entities/requisition-item.entity';
+import { RequisitionReturn } from './entities/requisition-return.entity';
+import { RequisitionComment } from './entities/requisition-comment.entity';
 import { RepairLog } from './entities/repair-log.entity';
 import { AssetStatusHistory } from './entities/asset-status-history.entity';
 import { AssetAssignmentHistory } from './entities/asset-assignment-history.entity';
@@ -72,6 +74,8 @@ import { WarehouseModule } from './warehouse/warehouse.module';
           WarehousePartRequest,
           PartRequisition,
           RequisitionItem,
+          RequisitionReturn,
+          RequisitionComment,
           RepairLog,
           AssetStatusHistory,
           AssetAssignmentHistory,

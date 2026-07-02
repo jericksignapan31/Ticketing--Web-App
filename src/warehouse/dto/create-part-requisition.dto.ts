@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min, Matches, MinLength, MaxLength, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -55,6 +55,19 @@ export class CreateRequisitionItemDto {
 }
 
 export class CreatePartRequisitionDto {
+  @ApiProperty({
+    example: 'RF2026001',
+    description: 'Requisition Form number (alphanumeric, 3-50 characters, unique)',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^[a-zA-Z0-9]+$/, {
+    message: 'rf_number must be alphanumeric (A-Z, 0-9 only)',
+  })
+  @MinLength(3, { message: 'rf_number must be at least 3 characters' })
+  @MaxLength(50, { message: 'rf_number must not exceed 50 characters' })
+  rf_number: string;
+
   @ApiProperty({
     example: 'IT Department',
     description: 'Department requesting',

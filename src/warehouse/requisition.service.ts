@@ -7,9 +7,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { PartRequisition } from '../entities/part-requisition.entity';
 import { RequisitionItem } from '../entities/requisition-item.entity';
+import { RequisitionReturn } from '../entities/requisition-return.entity';
+import { RequisitionComment } from '../entities/requisition-comment.entity';
 import { CreatePartRequisitionDto } from './dto/create-part-requisition.dto';
 import { AcknowledgeRequisitionDto } from './dto/acknowledge-requisition.dto';
 import { ApproveWarehousePartRequestDto } from './dto/approve-warehouse-part-request.dto';
+import { ReturnRequisitionDto } from './dto/return-requisition.dto';
+import { AddCommentDto } from './dto/add-comment.dto';
+import { ResubmitRequisitionDto } from './dto/resubmit-requisition.dto';
 import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
@@ -19,31 +24,33 @@ export class RequisitionService {
     private requisitionRepository: Repository<PartRequisition>,
     @InjectRepository(RequisitionItem)
     private itemRepository: Repository<RequisitionItem>,
+    @InjectRepository(RequisitionReturn)
+    private returnRepository: Repository<RequisitionReturn>,
+    @InjectRepository(RequisitionComment)
+    private commentRepository: Repository<RequisitionComment>,
   ) {}
-
-  // Generate RF number in format RF-2026-001
-  private async generateRFNumber(): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = `RF-${year}-`;
-    const latestRequisition = await this.requisitionRepository.findOne({
-      where: { rf_number: Like(`${prefix}%`) },
-      order: { rf_number: 'DESC' },
-    });
-
-    let nextNumber = 1;
-    if (latestRequisition) {
-      const lastNumber = parseInt(latestRequisition.rf_number.split('-')[2]);
-      nextNumber = lastNumber + 1;
-    }
-
-    return `RF-${year}-${String(nextNumber).padStart(3, '0')}`;
-  }
 
   async createRequisition(
     requester_id: string,
     requested_by_type: 'it' | 'warehouse',
     createPartRequisitionDto: CreatePartRequisitionDto,
   ): Promise<PartRequisition> {
+    // Validate rf_number is provided
+    if (!createPartRequisitionDto.rf_number || createPartRequisitionDto.rf_number.trim() === '') {
+      throw new BadRequestException('rf_number is required');
+    }
+
+    // Check if rf_number already exists
+    const existingRequisition = await this.requisitionRepository.findOne({
+      where: { rf_number: createPartRequisitionDto.rf_number },
+    });
+
+    if (existingRequisition) {
+      throw new BadRequestException(
+        `Requisition form number '${createPartRequisitionDto.rf_number}' already exists. Please use a unique RF number.`,
+      );
+    }
+
     // Validate items
     if (!createPartRequisitionDto.items || createPartRequisitionDto.items.length === 0) {
       throw new BadRequestException('At least one item is required');
@@ -63,12 +70,9 @@ export class RequisitionService {
     }
 
     try {
-      // Generate RF number
-      const rf_number = await this.generateRFNumber();
-
-      // Create requisition
+      // Create requisition with provided rf_number
       const requisition = this.requisitionRepository.create({
-        rf_number,
+        rf_number: createPartRequisitionDto.rf_number.trim(),
         requested_by: requester_id,
         requested_by_type,
         department: createPartRequisitionDto.department?.trim(),
@@ -284,5 +288,211 @@ export class RequisitionService {
     });
 
     return inventory;
+  }
+
+  /**
+   * Return an entire requisition with warehouse notes
+   * Status changes to 'returned_by_warehouse'
+   */
+  async returnRequisition(
+    rf_number: string,
+    warehouse_staff_id: string,
+    returnDto: ReturnRequisitionDto,
+  ): Promise<RequisitionReturn> {
+    const requisition = await this.getRequisitionByRF(rf_number);
+
+    // Check if requisition status is appropriate for return
+    if (
+      requisition.status !== 'pending' &&
+      requisition.status !== 'pending_admin_review'
+    ) {
+      throw new BadRequestException(
+        `Cannot return requisition with status '${requisition.status}'. Must be pending or pending_admin_review.`,
+      );
+    }
+
+    // Create return record
+    const returnRecord = this.returnRepository.create({
+      requisition_id: requisition.requisition_id,
+      returned_by: warehouse_staff_id,
+      warehouse_notes: returnDto.warehouse_notes.trim(),
+      return_cycle: 1,
+    });
+
+    const savedReturn = await this.returnRepository.save(returnRecord);
+
+    // Update requisition status to returned_by_warehouse
+    requisition.status = 'returned_by_warehouse';
+    await this.requisitionRepository.save(requisition);
+
+    console.log('✅ Requisition returned:', {
+      rf_number,
+      returned_by: warehouse_staff_id,
+      return_id: savedReturn.return_id,
+    });
+
+    return savedReturn;
+  }
+
+  /**
+   * Get all requisitions pending warehouse return (returned_by_warehouse status)
+   */
+  async getPendingReturns(): Promise<PartRequisition[]> {
+    return this.requisitionRepository
+      .createQueryBuilder('req')
+      .leftJoinAndSelect('req.items', 'items')
+      .leftJoinAndSelect('req.requester', 'requester')
+      .leftJoinAndSelect('req.returns', 'returns')
+      .leftJoinAndSelect('returns.comments', 'comments')
+      .where('req.status = :status', { status: 'returned_by_warehouse' })
+      .orderBy('req.updated_at', 'DESC')
+      .addOrderBy('returns.created_at', 'DESC')
+      .getMany();
+  }
+
+  /**
+   * Add a comment to a return thread
+   */
+  async addComment(
+    rf_number: string,
+    user_id: string,
+    user_role: 'warehouse' | 'it',
+    commentDto: AddCommentDto,
+  ): Promise<RequisitionComment> {
+    const requisition = await this.getRequisitionByRF(rf_number);
+
+    if (requisition.status !== 'returned_by_warehouse') {
+      throw new BadRequestException(
+        `Cannot add comment to requisition with status '${requisition.status}'. Must be returned_by_warehouse.`,
+      );
+    }
+
+    // Get the latest return record
+    const latestReturn = await this.returnRepository
+      .createQueryBuilder('ret')
+      .where('ret.requisition_id = :req_id', {
+        req_id: requisition.requisition_id,
+      })
+      .orderBy('ret.created_at', 'DESC')
+      .getOne();
+
+    if (!latestReturn) {
+      throw new NotFoundException('Return record not found for this requisition');
+    }
+
+    // Create comment
+    const comment = this.commentRepository.create({
+      return_id: latestReturn.return_id,
+      commented_by: user_id,
+      role: user_role,
+      message: commentDto.message.trim(),
+    });
+
+    const savedComment = await this.commentRepository.save(comment);
+
+    console.log('✅ Comment added:', {
+      rf_number,
+      comment_id: savedComment.comment_id,
+      role: user_role,
+    });
+
+    return savedComment;
+  }
+
+  /**
+   * Get all comments for a requisition return thread
+   */
+  async getComments(rf_number: string): Promise<RequisitionComment[]> {
+    const requisition = await this.getRequisitionByRF(rf_number);
+
+    // Get the latest return record
+    const latestReturn = await this.returnRepository
+      .createQueryBuilder('ret')
+      .leftJoinAndSelect('ret.comments', 'comments')
+      .where('ret.requisition_id = :req_id', {
+        req_id: requisition.requisition_id,
+      })
+      .orderBy('ret.created_at', 'DESC')
+      .getOne();
+
+    if (!latestReturn) {
+      return [];
+    }
+
+    // Return comments sorted by creation time
+    return latestReturn.comments.sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
+  }
+
+  /**
+   * Resubmit a requisition after IT edits
+   * Status returns to 'pending' for warehouse acknowledgement again
+   * Increments return_cycle counter
+   */
+  async resubmitRequisition(
+    rf_number: string,
+    it_staff_id: string,
+    _resubmitDto: ResubmitRequisitionDto,
+  ): Promise<RequisitionReturn> {
+    const requisition = await this.getRequisitionByRF(rf_number);
+
+    if (requisition.status !== 'returned_by_warehouse') {
+      throw new BadRequestException(
+        `Cannot resubmit requisition with status '${requisition.status}'. Must be returned_by_warehouse.`,
+      );
+    }
+
+    // Get the latest return record
+    const latestReturn = await this.returnRepository
+      .createQueryBuilder('ret')
+      .where('ret.requisition_id = :req_id', {
+        req_id: requisition.requisition_id,
+      })
+      .orderBy('ret.created_at', 'DESC')
+      .getOne();
+
+    if (!latestReturn) {
+      throw new NotFoundException('Return record not found for this requisition');
+    }
+
+    // Update return record with resubmit info
+    latestReturn.resubmitted_by = it_staff_id;
+    latestReturn.resubmitted_at = new Date();
+    await this.returnRepository.save(latestReturn);
+
+    // Update requisition status back to 'pending' for warehouse to acknowledge again
+    requisition.status = 'pending';
+    requisition.acknowledged_by = null;
+    requisition.acknowledged_at = null;
+    requisition.acknowledged_notes = null;
+    await this.requisitionRepository.save(requisition);
+
+    console.log('✅ Requisition resubmitted:', {
+      rf_number,
+      resubmitted_by: it_staff_id,
+      return_cycle: latestReturn.return_cycle,
+    });
+
+    return latestReturn;
+  }
+
+  /**
+   * Get full history of returns and resubmits for a requisition
+   */
+  async getRequisitionHistory(rf_number: string): Promise<RequisitionReturn[]> {
+    const requisition = await this.getRequisitionByRF(rf_number);
+
+    const returns = await this.returnRepository
+      .createQueryBuilder('ret')
+      .leftJoinAndSelect('ret.comments', 'comments')
+      .where('ret.requisition_id = :req_id', {
+        req_id: requisition.requisition_id,
+      })
+      .orderBy('ret.created_at', 'DESC')
+      .addOrderBy('comments.created_at', 'ASC')
+      .getMany();
+
+    return returns;
   }
 }
