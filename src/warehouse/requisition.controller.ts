@@ -116,8 +116,8 @@ export class RequisitionController {
 
   @Get('declined')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Get all declined requisitions (Admin only)' })
+  @Roles(UserRole.ADMIN, UserRole.IT, UserRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Get all declined requisitions (Admin, IT, Warehouse)' })
   @ApiResponse({
     status: 200,
     description: 'Returns all requisitions declined by admin with decline reasons',
