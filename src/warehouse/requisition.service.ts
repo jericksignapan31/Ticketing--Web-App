@@ -299,39 +299,64 @@ export class RequisitionService {
     warehouse_staff_id: string,
     returnDto: ReturnRequisitionDto,
   ): Promise<RequisitionReturn> {
-    const requisition = await this.getRequisitionByRF(rf_number);
+    try {
+      const requisition = await this.getRequisitionByRF(rf_number);
 
-    // Check if requisition status is appropriate for return
-    if (
-      requisition.status !== 'pending' &&
-      requisition.status !== 'pending_admin_review'
-    ) {
-      throw new BadRequestException(
-        `Cannot return requisition with status '${requisition.status}'. Must be pending or pending_admin_review.`,
-      );
+      // Check if requisition status is appropriate for return
+      if (
+        requisition.status !== 'pending' &&
+        requisition.status !== 'pending_admin_review'
+      ) {
+        throw new BadRequestException(
+          `Cannot return requisition with status '${requisition.status}'. Must be pending or pending_admin_review.`,
+        );
+      }
+
+      // Validate warehouse_notes is provided and is a string
+      if (!returnDto.warehouse_notes || typeof returnDto.warehouse_notes !== 'string') {
+        throw new BadRequestException('warehouse_notes is required and must be a string');
+      }
+
+      // Get the highest return_cycle for this requisition to increment it
+      const maxReturnCycle = await this.returnRepository
+        .createQueryBuilder('ret')
+        .select('MAX(ret.return_cycle)', 'maxCycle')
+        .where('ret.requisition_id = :req_id', {
+          req_id: requisition.requisition_id,
+        })
+        .getRawOne();
+
+      const nextCycle = (maxReturnCycle?.maxCycle || 0) + 1;
+
+      // Create return record
+      const returnRecord = this.returnRepository.create({
+        requisition_id: requisition.requisition_id,
+        returned_by: warehouse_staff_id,
+        warehouse_notes: returnDto.warehouse_notes.trim(),
+        return_cycle: nextCycle,
+      });
+
+      const savedReturn = await this.returnRepository.save(returnRecord);
+
+      // Update requisition status to returned_by_warehouse
+      requisition.status = 'returned_by_warehouse';
+      await this.requisitionRepository.save(requisition);
+
+      console.log('✅ Requisition returned:', {
+        rf_number,
+        returned_by: warehouse_staff_id,
+        return_id: savedReturn.return_id,
+        return_cycle: nextCycle,
+      });
+
+      return savedReturn;
+    } catch (error) {
+      console.error('❌ Error returning requisition:', error);
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException(`Failed to return requisition: ${(error as any).message}`);
     }
-
-    // Create return record
-    const returnRecord = this.returnRepository.create({
-      requisition_id: requisition.requisition_id,
-      returned_by: warehouse_staff_id,
-      warehouse_notes: returnDto.warehouse_notes.trim(),
-      return_cycle: 1,
-    });
-
-    const savedReturn = await this.returnRepository.save(returnRecord);
-
-    // Update requisition status to returned_by_warehouse
-    requisition.status = 'returned_by_warehouse';
-    await this.requisitionRepository.save(requisition);
-
-    console.log('✅ Requisition returned:', {
-      rf_number,
-      returned_by: warehouse_staff_id,
-      return_id: savedReturn.return_id,
-    });
-
-    return savedReturn;
   }
 
   /**
