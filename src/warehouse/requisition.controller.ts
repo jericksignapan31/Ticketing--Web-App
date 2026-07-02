@@ -125,6 +125,18 @@ export class RequisitionController {
     return this.requisitionService.getRequisitionInventory();
   }
 
+  @Get('warehouse/pending-returns')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT)
+  @ApiOperation({ summary: 'Get all requisitions pending IT response after warehouse return (IT only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns all requisitions with returned_by_warehouse status',
+  })
+  getPendingReturns() {
+    return this.requisitionService.getPendingReturns();
+  }
+
   @Get(':rf_number')
   @UseGuards(RolesGuard)
   @Roles(UserRole.IT, UserRole.WAREHOUSE, UserRole.ADMIN)
@@ -190,18 +202,6 @@ export class RequisitionController {
       user.employee_id,
       returnDto,
     );
-  }
-
-  @Get('warehouse/pending-returns')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.IT)
-  @ApiOperation({ summary: 'Get all requisitions pending IT response after warehouse return (IT only)' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns all requisitions with returned_by_warehouse status',
-  })
-  getPendingReturns() {
-    return this.requisitionService.getPendingReturns();
   }
 
   @Post(':rf_number/comments')

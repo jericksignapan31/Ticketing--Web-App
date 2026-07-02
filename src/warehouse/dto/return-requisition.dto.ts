@@ -1,7 +1,16 @@
-import { IsString, MinLength, IsNotEmpty } from 'class-validator';
+import { IsString, MinLength, IsNotEmpty, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ReturnRequisitionDto {
+  @ApiProperty({
+    example: 'RF2026001',
+    description: 'Requisition RF number (from URL parameter)',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  rf_number?: string;
+
   @ApiProperty({
     example: 'Items out of stock, need alternative suppliers',
     description: 'Reason for returning the requisition from warehouse',
