@@ -127,8 +127,8 @@ export class RequisitionController {
 
   @Get('warehouse/pending-returns')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.IT)
-  @ApiOperation({ summary: 'Get all requisitions pending IT response after warehouse return (IT only)' })
+  @Roles(UserRole.IT, UserRole.WAREHOUSE)
+  @ApiOperation({ summary: 'Get all requisitions pending IT response after warehouse return (IT and Warehouse)' })
   @ApiResponse({
     status: 200,
     description: 'Returns all requisitions with returned_by_warehouse status',
