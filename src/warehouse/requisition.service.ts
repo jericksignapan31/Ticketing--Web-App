@@ -300,6 +300,19 @@ export class RequisitionService {
     returnDto: ReturnRequisitionDto,
   ): Promise<RequisitionReturn> {
     try {
+      // First validate that warehouse_notes exists and meets requirements
+      if (!returnDto.warehouse_notes || returnDto.warehouse_notes.trim().length === 0) {
+        throw new BadRequestException(
+          'warehouse_notes is required - please provide a reason for returning the requisition',
+        );
+      }
+
+      if (returnDto.warehouse_notes.trim().length < 10) {
+        throw new BadRequestException(
+          `warehouse_notes must be at least 10 characters long (current: ${returnDto.warehouse_notes.trim().length} characters)`,
+        );
+      }
+
       const requisition = await this.getRequisitionByRF(rf_number);
 
       // Check if requisition status is appropriate for return
@@ -308,13 +321,8 @@ export class RequisitionService {
         requisition.status !== 'pending_admin_review'
       ) {
         throw new BadRequestException(
-          `Cannot return requisition with status '${requisition.status}'. Must be pending or pending_admin_review.`,
+          `Cannot return requisition with status '${requisition.status}'. Must be 'pending' or 'pending_admin_review'.`,
         );
-      }
-
-      // Validate warehouse_notes is provided and is a string
-      if (!returnDto.warehouse_notes || typeof returnDto.warehouse_notes !== 'string') {
-        throw new BadRequestException('warehouse_notes is required and must be a string');
       }
 
       // Get the highest return_cycle for this requisition to increment it
@@ -351,7 +359,10 @@ export class RequisitionService {
 
       return savedReturn;
     } catch (error) {
-      console.error('❌ Error returning requisition:', error);
+      console.error('❌ Error returning requisition:', {
+        rf_number,
+        error: (error as any).message,
+      });
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
       }
