@@ -299,7 +299,7 @@ export class RequisitionService {
       .leftJoinAndSelect('req.approver', 'approver')
       .leftJoinAndSelect('req.department', 'department')
       .where('req.status = :status', { status: 'approved' })
-      .orderBy('req.approved_at', 'DESC')
+      .orderBy('COALESCE(req.approved_at, req.created_at)', 'DESC')
       .getMany();
   }
 
