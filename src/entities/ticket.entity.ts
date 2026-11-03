@@ -45,6 +45,9 @@ export class Ticket {
   @Column({ default: 'pending' })
   approval_status!: string;
 
+  @Column({ default: true })
+  require_approval!: boolean;
+
   @Column({ nullable: true })
   approved_by?: string;
 

@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTicketDto {
@@ -57,4 +57,14 @@ export class CreateTicketDto {
   @IsString()
   @IsOptional()
   image_url?: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether supervisor approval is required (true) or auto-approve for IT (false)',
+    default: true,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  require_approval?: boolean;
 }

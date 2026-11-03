@@ -55,11 +55,21 @@ export class TicketService {
     const ticket = this.ticketRepository.create({
       ...createTicketDto,
       ticket_id, // Set the generated ID
+      require_approval: createTicketDto.require_approval !== false, // Default to true if not specified
     });
     
     // Auto-populate department_id from employee's department
     if (employee && employee.department_id) {
       ticket.department_id = employee.department_id;
+    }
+
+    // Auto-approve if require_approval is false (skip supervisor approval)
+    if (createTicketDto.require_approval === false) {
+      ticket.status = 'approved';
+      ticket.approval_status = 'approved';
+      ticket.approved_by = 'system'; // Marked as auto-approved by system
+      ticket.approved_at = new Date();
+      console.log('✅ Ticket auto-approved (require_approval: false):', { ticket_id });
     }
 
     const savedTicket = await this.ticketRepository.save(ticket);
