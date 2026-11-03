@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChatService } from './chat.service';
 import { ChatbotService } from './services/chatbot.service';
+import { ChatbotLearningService } from './services/chatbot-learning.service';
 import { ChatController } from './chat.controller';
 import { ChatGateway } from './chat.gateway';
 import { FileUploadService } from './services/file-upload.service';
@@ -28,10 +29,11 @@ import { TicketSolution } from './entities/ticket-solution.entity';
   providers: [
     ChatService,
     ChatbotService,
+    ChatbotLearningService,
     ChatGateway,
     FileUploadService,
     GeminiService,
   ],
-  exports: [ChatService, ChatbotService, FileUploadService, GeminiService],
+  exports: [ChatService, ChatbotService, ChatbotLearningService, FileUploadService, GeminiService],
 })
 export class ChatModule {}

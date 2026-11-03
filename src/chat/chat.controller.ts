@@ -25,6 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
 import { ChatbotService } from './services/chatbot.service';
+import { ChatbotLearningService } from './services/chatbot-learning.service';
 import { FileUploadService } from './services/file-upload.service';
 import { CreateMessageDto, MessageResponseDto } from './dto/message.dto';
 import { CreateConversationDto, ConversationResponseDto } from './dto/conversation.dto';
@@ -38,6 +39,14 @@ import {
   ChatbotTicketCreationDto,
   ChatbotStatsDto,
 } from './dto/chatbot.dto';
+import {
+  ExtractSolutionDto,
+  LearningResultDto,
+  BatchLearningDto,
+  BatchLearningResponseDto,
+  ImprovementRecommendationDto,
+  SyncConfidenceDto,
+} from './dto/chatbot-learning.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -52,6 +61,7 @@ export class ChatController {
   constructor(
     private readonly chatService: ChatService,
     private readonly chatbotService: ChatbotService,
+    private readonly learningService: ChatbotLearningService,
     private readonly fileUploadService: FileUploadService,
   ) {}
 
@@ -509,5 +519,143 @@ export class ChatController {
   })
   async chatbotStats(): Promise<ChatbotStatsDto> {
     return this.chatService.getChatbotStats();
+  }
+
+  // ============ CHATBOT LEARNING ENDPOINTS (Phase 3) ============
+
+  @Post('chatbot/learn/extract-solution')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Extract and learn from resolved ticket',
+    description: 'Extract solution from resolved ticket and populate knowledge base',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Solution extracted and KB populated',
+    type: LearningResultDto,
+  })
+  async extractSolution(
+    @Body() extractDto: ExtractSolutionDto,
+  ): Promise<LearningResultDto> {
+    try {
+      // Extract solution from ticket
+      const solution = await this.learningService.extractSolutionFromTicket(extractDto);
+
+      // Populate KB
+      const kbEntry = await this.learningService.populateKBFromSolution(solution);
+
+      // Update confidence if KB entry exists
+      if (kbEntry) {
+        await this.learningService.updateConfidenceFromResolution(extractDto, kbEntry);
+      }
+
+      return {
+        solution_id: solution.solution_id,
+        knowledge_id: kbEntry?.knowledge_id,
+        faq_question: kbEntry ? 'FAQ entry created' : undefined,
+        confidence_score: kbEntry?.confidence_score,
+        success: true,
+        message: 'Solution extracted and KB populated successfully',
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to extract solution: ${error.message}`,
+      );
+    }
+  }
+
+  @Post('chatbot/learn/batch')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Batch learn from multiple resolved tickets',
+    description: 'Process multiple resolved tickets to auto-populate knowledge base',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Batch learning completed',
+    type: BatchLearningResponseDto,
+  })
+  async batchLearn(
+    @Body() batchDto: BatchLearningDto,
+  ): Promise<BatchLearningResponseDto> {
+    try {
+      const result = await this.learningService.batchLearnFromTickets(
+        batchDto.tickets,
+      );
+
+      return {
+        ...result,
+        message: `Processed ${result.processed} tickets: ${result.solutions} solutions extracted, ${result.kbEntries} KB entries created/updated`,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Batch learning failed: ${error.message}`,
+      );
+    }
+  }
+
+  @Get('chatbot/learn/recommendations')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.IT, UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Get improvement recommendations',
+    description:
+      'Get suggestions for improving chatbot based on current performance',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Improvement recommendations',
+    type: ImprovementRecommendationDto,
+  })
+  async getRecommendations(): Promise<ImprovementRecommendationDto> {
+    try {
+      const recommendations =
+        await this.learningService.getImprovementRecommendations();
+
+      return {
+        lowConfidenceEntries: recommendations.lowConfidenceEntries.map((e) => ({
+          knowledge_id: e.knowledge_id,
+          question: e.question,
+          confidence_score: e.confidence_score,
+          usage_count: e.usage_count,
+        })),
+        unknownIssuePatterns: recommendations.unknownIssuePatterns,
+        frequentEscalations: recommendations.frequentEscalations,
+        summary: `Found ${recommendations.lowConfidenceEntries.length} low-confidence entries and ${recommendations.unknownIssuePatterns.length} unknown patterns`,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to get recommendations: ${error.message}`,
+      );
+    }
+  }
+
+  @Post('chatbot/learn/sync-confidence')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Sync confidence scores with feedback',
+    description: 'Update KB confidence scores based on user feedback data',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Confidence scores synced',
+    type: SyncConfidenceDto,
+  })
+  async syncConfidence(): Promise<SyncConfidenceDto> {
+    try {
+      const result = await this.learningService.syncConfidenceWithFeedback();
+
+      return {
+        updated: result.updated,
+        message: `Successfully synced confidence scores for ${result.updated} KB entries`,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to sync confidence scores: ${error.message}`,
+      );
+    }
   }
 }
