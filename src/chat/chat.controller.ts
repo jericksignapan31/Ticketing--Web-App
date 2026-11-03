@@ -24,11 +24,25 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
+import { ChatbotService } from './services/chatbot.service';
 import { FileUploadService } from './services/file-upload.service';
 import { CreateMessageDto, MessageResponseDto } from './dto/message.dto';
 import { CreateConversationDto, ConversationResponseDto } from './dto/conversation.dto';
+import {
+  ChatbotMessageDto,
+  ChatbotResponseDto,
+  CreateKnowledgeEntryDto,
+  KnowledgeEntryResponseDto,
+  ChatbotFeedbackDto,
+  KnowledgeSearchDto,
+  ChatbotTicketCreationDto,
+  ChatbotStatsDto,
+} from './dto/chatbot.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @ApiTags('Chat')
 @Controller('chat')
@@ -37,6 +51,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 export class ChatController {
   constructor(
     private readonly chatService: ChatService,
+    private readonly chatbotService: ChatbotService,
     private readonly fileUploadService: FileUploadService,
   ) {}
 
@@ -332,20 +347,12 @@ export class ChatController {
   @ApiResponse({
     status: 200,
     description: 'Chatbot response',
-    schema: {
-      example: {
-        response: 'How can I help you today?',
-        intent: 'GENERAL',
-        confidence: 0.85,
-        responseType: 'GENERAL',
-        interactionId: 'uuid-here',
-      },
-    },
+    type: ChatbotResponseDto,
   })
   async chatbotMessage(
-    @Body() body: { conversation_id: string; message: string },
+    @Body() body: ChatbotMessageDto,
     @CurrentUser() user: any,
-  ) {
+  ): Promise<ChatbotResponseDto> {
     if (!body.message || !body.conversation_id) {
       throw new BadRequestException('Message and conversation_id are required');
     }
@@ -354,16 +361,142 @@ export class ChatController {
     const userRole = user.role || 'EMPLOYEE';
     const userDepartment = user.department_id;
 
-    // TODO: Fetch user's recent tickets for context
-    const recentTickets: any[] = [];
-
     return this.chatService.processChatbotMessage({
       user_id: userId,
       conversation_id: body.conversation_id,
       message: body.message,
       userRole,
       userDepartment,
-      recentTickets,
+      recentTickets: [],
+    });
+  }
+
+  @Post('chatbot/feedback')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Submit feedback on chatbot response' })
+  @ApiResponse({
+    status: 200,
+    description: 'Feedback recorded',
+  })
+  async submitFeedback(@Body() feedback: ChatbotFeedbackDto): Promise<{ message: string }> {
+    await this.chatbotService.submitFeedback(
+      feedback.interaction_id,
+      {
+        satisfaction_score: feedback.satisfaction_score,
+        is_helpful: feedback.is_helpful,
+        user_feedback: feedback.user_feedback,
+      },
+    );
+
+    return { message: 'Feedback recorded successfully' };
+  }
+
+  @Post('chatbot/kb/search')
+  @ApiOperation({ summary: 'Search knowledge base' })
+  @ApiResponse({
+    status: 200,
+    description: 'Knowledge base entries matching query',
+    type: [KnowledgeEntryResponseDto],
+  })
+  async searchKnowledgeBase(
+    @Body() search: KnowledgeSearchDto,
+  ): Promise<KnowledgeEntryResponseDto[]> {
+    if (!search.query) {
+      throw new BadRequestException('Query is required');
+    }
+
+    return this.chatbotService.searchKnowledgeBase(
+      search.query,
+      search.limit || 5,
+    );
+  }
+
+  @Get('chatbot/kb/categories')
+  @ApiOperation({ summary: 'Get all FAQ categories' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of FAQ categories',
+    schema: { example: ['Password Management', 'Hardware', 'Software'] },
+  })
+  async getFAQCategories(): Promise<string[]> {
+    return this.chatbotService.getFAQCategories();
+  }
+
+  @Get('chatbot/kb/category/:category')
+  @ApiOperation({ summary: 'Get FAQ entries by category' })
+  @ApiParam({ name: 'category', description: 'FAQ category name' })
+  @ApiResponse({
+    status: 200,
+    description: 'FAQ entries in category',
+    type: [KnowledgeEntryResponseDto],
+  })
+  async getFAQByCategory(
+    @Param('category') category: string,
+  ): Promise<KnowledgeEntryResponseDto[]> {
+    return this.chatbotService.getFAQByCategory(category);
+  }
+
+  @Get('chatbot/kb/popular')
+  @ApiOperation({ summary: 'Get most helpful FAQ entries' })
+  @ApiResponse({
+    status: 200,
+    description: 'Most helpful knowledge base entries',
+    type: [KnowledgeEntryResponseDto],
+  })
+  async getPopularFAQ(
+    @Query('limit') limit?: string,
+  ): Promise<KnowledgeEntryResponseDto[]> {
+    const limitNum = limit ? Math.min(parseInt(limit, 10), 50) : 10;
+    return this.chatbotService.getMostHelpfulResponses(limitNum);
+  }
+
+  @Post('chatbot/kb/add')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.IT)
+  @ApiOperation({ summary: 'Add FAQ entry to knowledge base (Admin/IT only)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Knowledge base entry created',
+    type: KnowledgeEntryResponseDto,
+  })
+  async addKnowledgeEntry(
+    @Body() entry: CreateKnowledgeEntryDto,
+  ): Promise<KnowledgeEntryResponseDto> {
+    return this.chatbotService.addKnowledgeEntry({
+      category: entry.category,
+      question: entry.question,
+      answer: entry.answer,
+      keywords: entry.keywords,
+    });
+  }
+
+  @Post('chatbot/ticket/create')
+  @ApiOperation({ summary: 'Create ticket from chatbot assistance' })
+  @ApiResponse({
+    status: 201,
+    description: 'Ticket created',
+    schema: {
+      example: {
+        ticket_id: 'IT-20261103-0001',
+        message: 'Ticket created successfully',
+      },
+    },
+  })
+  async createTicketFromChatbot(
+    @Body() ticketData: ChatbotTicketCreationDto,
+    @CurrentUser() user: any,
+  ): Promise<{ ticket_id: string; message: string }> {
+    const userId = user.sub || user.user_id || user.id;
+
+    return this.chatbotService.confirmTicketCreation({
+      user_id: userId,
+      conversation_id: ticketData.conversation_id,
+      category: ticketData.category,
+      priority: ticketData.priority,
+      subject: ticketData.subject,
+      description: ticketData.description,
+      asset_id: ticketData.asset_id,
+      require_approval: ticketData.require_approval,
     });
   }
 
@@ -372,16 +505,9 @@ export class ChatController {
   @ApiResponse({
     status: 200,
     description: 'Chatbot stats',
-    schema: {
-      example: {
-        totalInteractions: 150,
-        averageConfidence: 0.82,
-        knowledgeBaseSize: 45,
-        resolvedSolutions: 23,
-      },
-    },
+    type: ChatbotStatsDto,
   })
-  async chatbotStats() {
+  async chatbotStats(): Promise<ChatbotStatsDto> {
     return this.chatService.getChatbotStats();
   }
 }

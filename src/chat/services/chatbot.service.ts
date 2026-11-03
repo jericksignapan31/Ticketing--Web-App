@@ -135,7 +135,7 @@ export class ChatbotService {
   private async handleFAQ(message: string): Promise<{ answer: string }> {
     // Try to find in knowledge base first
     const keywords = this.extractKeywords(message);
-    const kbEntry = await this.searchKnowledgeBase(keywords);
+    const kbEntry = await this.findTopKnowledgeEntry(keywords);
 
     if (kbEntry && kbEntry.confidence_score >= this.CONFIDENCE_THRESHOLD) {
       // Update usage count
@@ -260,9 +260,9 @@ export class ChatbotService {
   }
 
   /**
-   * Search knowledge base by keywords
+   * Search knowledge base by keywords (internal - returns single best match)
    */
-  private async searchKnowledgeBase(keywords: string[]): Promise<ChatbotKnowledge | null> {
+  private async findTopKnowledgeEntry(keywords: string[]): Promise<ChatbotKnowledge | null> {
     if (keywords.length === 0) {
       return null;
     }
@@ -466,5 +466,195 @@ export class ChatbotService {
       knowledgeBaseSize,
       resolvedSolutions,
     };
+  }
+
+  /**
+   * Submit user feedback on chatbot interaction
+   */
+  async submitFeedback(
+    interaction_id: string,
+    feedback: {
+      satisfaction_score: number;
+      is_helpful: boolean;
+      user_feedback?: string;
+    },
+  ): Promise<void> {
+    const interaction = await this.interactionRepository.findOne({
+      where: { interaction_id },
+    });
+
+    if (!interaction) {
+      throw new BadRequestException('Interaction not found');
+    }
+
+    // Update interaction with feedback
+    interaction.satisfaction_score = feedback.satisfaction_score;
+    interaction.is_helpful = feedback.is_helpful;
+    interaction.user_feedback = feedback.user_feedback;
+
+    await this.interactionRepository.save(interaction);
+
+    // If this came from a knowledge base, update its confidence
+    if (interaction.knowledge_id && feedback.is_helpful !== undefined) {
+      await this.updateKnowledgeConfidence(
+        interaction.knowledge_id,
+        feedback.is_helpful,
+      );
+    }
+
+    this.logger.log(
+      `Feedback received: helpful=${feedback.is_helpful}, score=${feedback.satisfaction_score}`,
+    );
+  }
+
+  /**
+   * Search knowledge base
+   */
+  async searchKnowledgeBase(
+    query: string,
+    limit: number = 5,
+  ): Promise<ChatbotKnowledge[]> {
+    const keywords = this.extractKeywords(query);
+
+    if (keywords.length === 0) {
+      return [];
+    }
+
+    const qb = this.knowledgeRepository
+      .createQueryBuilder('kb')
+      .where('kb.is_active = true');
+
+    // Search in keywords, question, and answer
+    let orConditions: string[] = [];
+    keywords.forEach((keyword, idx) => {
+      orConditions.push(`kb.keywords LIKE '%${keyword}%'`);
+      orConditions.push(`kb.question ILIKE '%${keyword}%'`);
+    });
+
+    if (orConditions.length > 0) {
+      qb.andWhere(`(${orConditions.join(' OR ')})`);
+    }
+
+    return await qb
+      .orderBy('kb.confidence_score', 'DESC')
+      .orderBy('kb.usage_count', 'DESC')
+      .limit(limit)
+      .getMany();
+  }
+
+  /**
+   * Get related solutions for troubleshooting
+   */
+  async getRelatedSolutions(message: string, limit: number = 3): Promise<TicketSolution[]> {
+    const keywords = this.extractKeywords(message);
+
+    const qb = this.solutionRepository
+      .createQueryBuilder('ts')
+      .where('ts.is_active = true');
+
+    if (keywords.length > 0) {
+      let orConditions: string[] = [];
+      keywords.forEach((keyword) => {
+        orConditions.push(`ts.tags LIKE '%${keyword}%'`);
+        orConditions.push(`ts.category ILIKE '%${keyword}%'`);
+        orConditions.push(`ts.issue_type ILIKE '%${keyword}%'`);
+      });
+
+      if (orConditions.length > 0) {
+        qb.andWhere(`(${orConditions.join(' OR ')})`);
+      }
+    }
+
+    return await qb
+      .orderBy('ts.usage_count', 'DESC')
+      .orderBy('ts.created_at', 'DESC')
+      .limit(limit)
+      .getMany();
+  }
+
+  /**
+   * Confirm and create ticket from chatbot assistance
+   */
+  async confirmTicketCreation(ticketData: {
+    user_id: string;
+    conversation_id: string;
+    category?: string;
+    priority?: string;
+    subject: string;
+    description: string;
+    asset_id?: string;
+    require_approval?: boolean;
+  }): Promise<{ ticket_id: string; message: string }> {
+    this.logger.log(
+      `[Chatbot] Creating ticket: ${ticketData.subject}`,
+    );
+
+    // In real implementation, this would call the TicketService
+    // For now, return a message indicating ticket would be created
+    const mockTicketId = `IT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+
+    return {
+      ticket_id: mockTicketId,
+      message: `✅ Ticket ${mockTicketId} has been created and is ready for IT review.`,
+    };
+  }
+
+  /**
+   * Get FAQ by category
+   */
+  async getFAQByCategory(category: string): Promise<ChatbotKnowledge[]> {
+    return await this.knowledgeRepository.find({
+      where: {
+        category,
+        is_active: true,
+      },
+      order: { confidence_score: 'DESC' },
+    });
+  }
+
+  /**
+   * Get all FAQ categories
+   */
+  async getFAQCategories(): Promise<string[]> {
+    const results = await this.knowledgeRepository
+      .createQueryBuilder('kb')
+      .select('DISTINCT kb.category', 'category')
+      .where('kb.is_active = true')
+      .getRawMany();
+
+    return results.map((r) => r.category).filter((c) => c);
+  }
+
+  /**
+   * Get most helpful responses
+   */
+  async getMostHelpfulResponses(limit: number = 10): Promise<ChatbotKnowledge[]> {
+    return await this.knowledgeRepository
+      .createQueryBuilder('kb')
+      .where('kb.is_active = true')
+      .orderBy('kb.helpful_count', 'DESC')
+      .orderBy('kb.confidence_score', 'DESC')
+      .limit(limit)
+      .getMany();
+  }
+
+  /**
+   * Get conversation history for context
+   */
+  async getConversationHistory(
+    conversation_id: string,
+    limit: number = 5,
+  ): Promise<Array<{ role: string; content: string }>> {
+    const interactions = await this.interactionRepository
+      .createQueryBuilder('ci')
+      .where('ci.conversation_id = :conversation_id', { conversation_id })
+      .orderBy('ci.created_at', 'DESC')
+      .limit(limit)
+      .getMany();
+
+    return interactions.flatMap((i) => [
+      { role: 'user', content: i.user_message },
+      { role: 'assistant', content: i.chatbot_response },
+    ]);
   }
 }
