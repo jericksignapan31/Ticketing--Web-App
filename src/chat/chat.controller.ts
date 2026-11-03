@@ -324,4 +324,64 @@ export class ChatController {
     // Note: Add user verification logic in service if needed
     return this.chatService.deleteAttachment(attachmentId);
   }
+
+  // ============ CHATBOT ENDPOINTS ============
+
+  @Post('chatbot/message')
+  @ApiOperation({ summary: 'Send message to chatbot' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chatbot response',
+    schema: {
+      example: {
+        response: 'How can I help you today?',
+        intent: 'GENERAL',
+        confidence: 0.85,
+        responseType: 'GENERAL',
+        interactionId: 'uuid-here',
+      },
+    },
+  })
+  async chatbotMessage(
+    @Body() body: { conversation_id: string; message: string },
+    @CurrentUser() user: any,
+  ) {
+    if (!body.message || !body.conversation_id) {
+      throw new BadRequestException('Message and conversation_id are required');
+    }
+
+    const userId = user.sub || user.user_id || user.id;
+    const userRole = user.role || 'EMPLOYEE';
+    const userDepartment = user.department_id;
+
+    // TODO: Fetch user's recent tickets for context
+    const recentTickets: any[] = [];
+
+    return this.chatService.processChatbotMessage({
+      user_id: userId,
+      conversation_id: body.conversation_id,
+      message: body.message,
+      userRole,
+      userDepartment,
+      recentTickets,
+    });
+  }
+
+  @Get('chatbot/stats')
+  @ApiOperation({ summary: 'Get chatbot statistics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Chatbot stats',
+    schema: {
+      example: {
+        totalInteractions: 150,
+        averageConfidence: 0.82,
+        knowledgeBaseSize: 45,
+        resolvedSolutions: 23,
+      },
+    },
+  })
+  async chatbotStats() {
+    return this.chatService.getChatbotStats();
+  }
 }

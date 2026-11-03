@@ -6,6 +6,7 @@ import { FileAttachment } from './entities/file-attachment.entity';
 import { Conversation, ConversationType } from './entities/conversation.entity';
 import { CreateMessageDto } from './dto/message.dto';
 import { CreateConversationDto } from './dto/conversation.dto';
+import { ChatbotService } from './services/chatbot.service';
 
 @Injectable()
 export class ChatService {
@@ -18,6 +19,7 @@ export class ChatService {
     private attachmentRepository: Repository<FileAttachment>,
     @InjectRepository(Conversation)
     private conversationRepository: Repository<Conversation>,
+    private chatbotService: ChatbotService,
   ) {}
 
   // ============ GENERAL CHAT INITIALIZATION ============
@@ -493,5 +495,27 @@ export class ChatService {
     });
   }
 
+  // ============ CHATBOT INTEGRATION ============
+
+  /**
+   * Process chatbot message
+   */
+  async processChatbotMessage(request: {
+    user_id: string;
+    conversation_id: string;
+    message: string;
+    userRole?: string;
+    userDepartment?: string;
+    recentTickets?: any[];
+  }) {
+    return this.chatbotService.handleMessage(request);
+  }
+
+  /**
+   * Get chatbot statistics
+   */
+  async getChatbotStats() {
+    return this.chatbotService.getStats();
+  }
 }
 
