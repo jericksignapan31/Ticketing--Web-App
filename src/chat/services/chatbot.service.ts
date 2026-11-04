@@ -446,26 +446,38 @@ export class ChatbotService {
     knowledgeBaseSize: number;
     resolvedSolutions: number;
   }> {
-    const totalInteractions = await this.interactionRepository.count();
-    const avgConfidenceResult = await this.interactionRepository
-      .createQueryBuilder()
-      .select('AVG(intent_confidence)', 'avg')
-      .getRawOne();
+    try {
+      const totalInteractions = await this.interactionRepository.count();
+      
+      const avgConfidenceResult = await this.interactionRepository
+        .createQueryBuilder('ci')
+        .select('AVG(CAST(ci.intent_confidence AS FLOAT))', 'avg')
+        .getRawOne();
 
-    const knowledgeBaseSize = await this.knowledgeRepository.count({
-      where: { is_active: true },
-    });
+      const knowledgeBaseSize = await this.knowledgeRepository.count({
+        where: { is_active: true },
+      });
 
-    const resolvedSolutions = await this.solutionRepository.count({
-      where: { is_active: true },
-    });
+      const resolvedSolutions = await this.solutionRepository.count({
+        where: { is_active: true },
+      });
 
-    return {
-      totalInteractions,
-      averageConfidence: avgConfidenceResult?.avg || 0,
-      knowledgeBaseSize,
-      resolvedSolutions,
-    };
+      return {
+        totalInteractions: totalInteractions || 0,
+        averageConfidence: parseFloat(avgConfidenceResult?.avg || '0'),
+        knowledgeBaseSize: knowledgeBaseSize || 0,
+        resolvedSolutions: resolvedSolutions || 0,
+      };
+    } catch (error) {
+      this.logger.error('Error getting chatbot stats:', error);
+      // Return empty stats instead of crashing
+      return {
+        totalInteractions: 0,
+        averageConfidence: 0,
+        knowledgeBaseSize: 0,
+        resolvedSolutions: 0,
+      };
+    }
   }
 
   /**
