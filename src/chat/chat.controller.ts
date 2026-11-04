@@ -77,9 +77,21 @@ export class ChatController {
   async createConversation(
     @Body() createConversationDto: CreateConversationDto,
     @CurrentUser() user: any,
-  ) {
+  ): Promise<ConversationResponseDto> {
     const userId = user.sub || user.user_id || user.id;
-    return this.chatService.createConversation(createConversationDto, userId);
+    const conversation = await this.chatService.createConversation(
+      createConversationDto,
+      userId,
+    );
+    // Map to DTO to ensure proper serialization
+    return {
+      conversation_id: conversation.conversation_id,
+      type: conversation.type,
+      name: conversation.name,
+      participant_ids: conversation.participant_ids,
+      created_at: conversation.created_at,
+      updated_at: conversation.updated_at,
+    };
   }
 
   @Get('conversations')

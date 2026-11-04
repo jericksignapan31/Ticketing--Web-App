@@ -451,7 +451,7 @@ export class ChatbotService {
       
       const avgConfidenceResult = await this.interactionRepository
         .createQueryBuilder('ci')
-        .select('AVG(CAST(ci.intent_confidence AS FLOAT))', 'avg')
+        .select('AVG(ci.intent_confidence)', 'avg')
         .getRawOne();
 
       const knowledgeBaseSize = await this.knowledgeRepository.count({
@@ -462,9 +462,17 @@ export class ChatbotService {
         where: { is_active: true },
       });
 
+      // Parse average confidence safely
+      let avgConfidence = 0;
+      if (avgConfidenceResult?.avg !== null && avgConfidenceResult?.avg !== undefined) {
+        const value = avgConfidenceResult.avg;
+        avgConfidence = typeof value === 'string' ? parseFloat(value) : Number(value);
+        avgConfidence = isNaN(avgConfidence) ? 0 : avgConfidence;
+      }
+
       return {
         totalInteractions: totalInteractions || 0,
-        averageConfidence: parseFloat(avgConfidenceResult?.avg || '0'),
+        averageConfidence: avgConfidence,
         knowledgeBaseSize: knowledgeBaseSize || 0,
         resolvedSolutions: resolvedSolutions || 0,
       };
