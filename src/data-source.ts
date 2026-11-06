@@ -18,6 +18,9 @@ import { RepairLog } from './entities/repair-log.entity';
 import { Message } from './chat/entities/message.entity';
 import { Conversation } from './chat/entities/conversation.entity';
 import { FileAttachment } from './chat/entities/file-attachment.entity';
+import { ChatbotKnowledge } from './chat/entities/chatbot-knowledge.entity';
+import { ChatbotInteraction } from './chat/entities/chatbot-interaction.entity';
+import { TicketSolution } from './chat/entities/ticket-solution.entity';
 
 // Load environment variables
 config({ path: '.env' });
@@ -48,6 +51,9 @@ export const AppDataSource = new DataSource({
     Message,
     Conversation,
     FileAttachment,
+    ChatbotKnowledge,
+    ChatbotInteraction,
+    TicketSolution,
   ],
   migrations: ['dist/src/migrations/*.js'],
   synchronize: false,

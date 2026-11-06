@@ -26,6 +26,9 @@ import { AssetMovementHistory } from './entities/asset-movement-history.entity';
 import { Message } from './chat/entities/message.entity';
 import { Conversation } from './chat/entities/conversation.entity';
 import { FileAttachment } from './chat/entities/file-attachment.entity';
+import { ChatbotKnowledge } from './chat/entities/chatbot-knowledge.entity';
+import { ChatbotInteraction } from './chat/entities/chatbot-interaction.entity';
+import { TicketSolution } from './chat/entities/ticket-solution.entity';
 import { AuthModule } from './auth/auth.module';
 import { EmployeeModule } from './employee/employee.module';
 import { BranchModule } from './branch/branch.module';
@@ -83,6 +86,9 @@ import { WarehouseModule } from './warehouse/warehouse.module';
           Message,
           Conversation,
           FileAttachment,
+          ChatbotKnowledge,
+          ChatbotInteraction,
+          TicketSolution,
         ],
         migrations: ['dist/migrations/*.js'],
         migrationsRun: true,
