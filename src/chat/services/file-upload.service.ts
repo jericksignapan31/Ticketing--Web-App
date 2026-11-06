@@ -27,7 +27,7 @@ export class FileUploadService {
     await fs.writeFile(filePath, file.buffer);
 
     // Generate file URL (adjust based on your setup)
-    const fileUrl = `/api/chat/files/${fileName}`;
+    const fileUrl = `/chat/files/${fileName}`;
 
     // Create attachment DTO
     const attachment: FileAttachmentDto = {
