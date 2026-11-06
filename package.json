@@ -26,6 +26,7 @@
     "migration:show": "npm run typeorm -- migration:show -d src/data-source.ts",
     "seed": "ts-node -r tsconfig-paths/register src/seed.ts",
     "seed:dashboard": "ts-node -r tsconfig-paths/register src/seed-dashboard-data.ts",
+    "seed:chatbot-kb": "ts-node -r tsconfig-paths/register src/scripts/seed-chatbot-kb.ts",
     "migrate:admin": "ts-node -r tsconfig-paths/register src/migrate-admin-only.ts"
   },
   "dependencies": {
