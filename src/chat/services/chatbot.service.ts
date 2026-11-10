@@ -2,9 +2,12 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChatbotKnowledge } from '../entities/chatbot-knowledge.entity';
-import { ChatbotInteraction, ChatbotResponseType } from '../entities/chatbot-interaction.entity';
+import {
+  ChatbotInteraction,
+  ChatbotResponseType,
+} from '../entities/chatbot-interaction.entity';
 import { TicketSolution } from '../entities/ticket-solution.entity';
-import { GeminiService } from './gemini.service';
+import { GeminiContext, GeminiService } from './gemini.service';
 
 export interface ChatbotRequest {
   user_id: string;
@@ -14,6 +17,23 @@ export interface ChatbotRequest {
   userDepartment?: string;
   recentTickets?: any[];
   conversationHistory?: Array<{ role: string; content: string }>;
+}
+
+interface RetrievedKnowledge {
+  faqs: Array<{
+    knowledge_id: string;
+    category: string;
+    question: string;
+    answer: string;
+    confidence_score: number;
+  }>;
+  solutions: Array<{
+    category?: string;
+    issue_type?: string;
+    summary: string;
+    steps: string[];
+    notes?: string;
+  }>;
 }
 
 export interface ChatbotReply {
@@ -51,8 +71,29 @@ export class ChatbotService {
 
     this.logger.log(`[${user_id}] Processing: ${message.substring(0, 50)}...`);
 
-    // Step 1: Detect intent
-    const intentDetection = await this.geminiService.detectIntent(message);
+    // Retrieve grounding before any Gemini request, including intent detection.
+    const conversationHistory = request.conversationHistory?.length
+      ? request.conversationHistory.slice(-10)
+      : await this.getConversationHistory(conversation_id, 5);
+    const retrievalMessage = this.getRetrievalQuery(
+      message,
+      conversationHistory,
+    );
+    const knowledgeBase =
+      await this.retrieveRelevantKnowledge(retrievalMessage);
+    const context: GeminiContext = {
+      userRole: request.userRole,
+      userDepartment: request.userDepartment,
+      recentTickets: request.recentTickets,
+      conversationHistory,
+      knowledgeBase,
+    };
+
+    // Step 1: Detect intent with the same grounding context used for the answer.
+    const intentDetection = await this.geminiService.detectIntent(
+      message,
+      context,
+    );
     const { intent, confidence } = intentDetection;
 
     this.logger.log(`Intent: ${intent} (confidence: ${confidence})`);
@@ -63,45 +104,75 @@ export class ChatbotService {
     let suggestedAction: any = null;
 
     try {
-      switch (intent) {
-        case 'FAQ':
-          const faqResult = await this.handleFAQ(message);
-          response = faqResult.answer;
-          responseType = ChatbotResponseType.FAQ;
-          break;
+      const needsGroundedAnswer = [
+        'FAQ',
+        'TROUBLESHOOTING',
+        'GENERAL',
+      ].includes(intent);
+      const hasKnowledge =
+        knowledgeBase.faqs.length > 0 ||
+        knowledgeBase.solutions.length > 0 ||
+        (this.isFollowUpMessage(message) && conversationHistory.length > 0);
 
-        case 'TICKET_CREATION':
-          const ticketResult = await this.handleTicketCreation(message);
-          response = ticketResult.response;
-          responseType = ChatbotResponseType.TICKET_CREATION;
-          suggestedAction = ticketResult.suggestedAction;
-          break;
+      if (
+        needsGroundedAnswer &&
+        (!hasKnowledge ||
+          (confidence < this.CONFIDENCE_THRESHOLD &&
+            this.geminiService.isGeminiAvailable()))
+      ) {
+        response = this.getInsufficientContextResponse();
+        responseType =
+          intent === 'TROUBLESHOOTING'
+            ? ChatbotResponseType.TROUBLESHOOTING
+            : intent === 'FAQ'
+              ? ChatbotResponseType.FAQ
+              : ChatbotResponseType.GENERAL;
+      } else
+        switch (intent) {
+          case 'FAQ':
+            const faqResult = await this.handleFAQ(message, context);
+            response = faqResult.answer;
+            responseType = ChatbotResponseType.FAQ;
+            break;
 
-        case 'TROUBLESHOOTING':
-          const troubleResult = await this.handleTroubleshooting(message);
-          response = troubleResult.response;
-          responseType = ChatbotResponseType.TROUBLESHOOTING;
-          suggestedAction = troubleResult.suggestedAction;
-          break;
+          case 'TICKET_CREATION':
+            const ticketResult = await this.handleTicketCreation(
+              message,
+              context,
+            );
+            response = ticketResult.response;
+            responseType = ChatbotResponseType.TICKET_CREATION;
+            suggestedAction = ticketResult.suggestedAction;
+            break;
 
-        case 'TICKET_STATUS':
-          const statusResult = await this.handleTicketStatus(message);
-          response = statusResult.response;
-          responseType = ChatbotResponseType.TICKET_STATUS;
-          break;
+          case 'TROUBLESHOOTING':
+            const troubleResult = await this.handleTroubleshooting(
+              message,
+              context,
+            );
+            response = troubleResult.response;
+            responseType = ChatbotResponseType.TROUBLESHOOTING;
+            suggestedAction = troubleResult.suggestedAction;
+            break;
 
-        case 'ESCALATION':
-          const escalationResult = await this.handleEscalation(message);
-          response = escalationResult.response;
-          responseType = ChatbotResponseType.ESCALATION;
-          break;
+          case 'TICKET_STATUS':
+            const statusResult = await this.handleTicketStatus(message);
+            response = statusResult.response;
+            responseType = ChatbotResponseType.TICKET_STATUS;
+            break;
 
-        default:
-          const generalResult = await this.handleGeneral(message, request);
-          response = generalResult.response;
-          responseType = ChatbotResponseType.GENERAL;
-          break;
-      }
+          case 'ESCALATION':
+            const escalationResult = await this.handleEscalation(message);
+            response = escalationResult.response;
+            responseType = ChatbotResponseType.ESCALATION;
+            break;
+
+          default:
+            const generalResult = await this.handleGeneral(message, context);
+            response = generalResult.response;
+            responseType = ChatbotResponseType.GENERAL;
+            break;
+        }
     } catch (error) {
       this.logger.error('Error processing message:', error);
       response = this.getFallbackResponse();
@@ -132,38 +203,43 @@ export class ChatbotService {
   /**
    * Handle FAQ queries
    */
-  private async handleFAQ(message: string): Promise<{ answer: string }> {
-    // Try to find in knowledge base first
-    const keywords = this.extractKeywords(message);
-    const kbEntry = await this.findTopKnowledgeEntry(keywords);
-
-    if (kbEntry && kbEntry.confidence_score >= this.CONFIDENCE_THRESHOLD) {
-      // Update usage count
-      await this.knowledgeRepository.update(
-        { knowledge_id: kbEntry.knowledge_id },
-        { usage_count: () => 'usage_count + 1' },
-      );
-
-      return {
-        answer: kbEntry.answer,
-      };
+  private async handleFAQ(
+    message: string,
+    context: GeminiContext,
+  ): Promise<{ answer: string }> {
+    const matchingFaq = context.knowledgeBase?.faqs[0];
+    if (matchingFaq) {
+      await this.knowledgeRepository
+        .createQueryBuilder()
+        .update(ChatbotKnowledge)
+        .set({ usage_count: () => 'usage_count + 1' })
+        .where('knowledge_id = :knowledge_id', {
+          knowledge_id: matchingFaq.knowledge_id,
+        })
+        .execute();
     }
 
-    // Fallback to Gemini if not found in KB
-    const geminiResponse = await this.geminiService.generateResponse(message);
-    return {
-      answer: geminiResponse.text,
-    };
+    const geminiResponse = await this.geminiService.generateResponse(
+      message,
+      context,
+    );
+    return { answer: geminiResponse.text };
   }
 
   /**
    * Handle ticket creation requests
    */
-  private async handleTicketCreation(message: string): Promise<{
+  private async handleTicketCreation(
+    message: string,
+    context: GeminiContext,
+  ): Promise<{
     response: string;
     suggestedAction?: any;
   }> {
-    const ticketInfo = await this.geminiService.extractTicketInfo(message);
+    const ticketInfo = await this.geminiService.extractTicketInfo(
+      message,
+      context,
+    );
 
     const response = `I'd like to help you create a support ticket for this issue.\n\n📋 **Ticket Summary:**\n- **Category:** ${ticketInfo.category || 'To be determined'}\n- **Priority:** ${ticketInfo.priority || 'Normal'}\n- **Subject:** ${ticketInfo.subject}\n\n✅ Shall I proceed with creating this ticket? Reply "yes" to confirm or provide more details.`;
 
@@ -179,31 +255,16 @@ export class ChatbotService {
   /**
    * Handle troubleshooting requests
    */
-  private async handleTroubleshooting(message: string): Promise<{
+  private async handleTroubleshooting(
+    message: string,
+    context: GeminiContext,
+  ): Promise<{
     response: string;
     suggestedAction?: any;
   }> {
-    // Search for similar solutions in ticket history
-    const similarSolutions = await this.findSimilarSolutions(message);
-
-    if (similarSolutions.length > 0) {
-      const solution = similarSolutions[0];
-      const steps = solution.resolution_steps?.join('\n') || '';
-
-      const response = `I found a similar issue that was resolved. Here are the steps:\n\n${steps}\n\n❓ Did this help resolve your issue? If not, I can help you create a support ticket.`;
-
-      return {
-        response,
-        suggestedAction: {
-          type: 'CREATE_TICKET_IF_NEEDED',
-          data: { solution_id: solution.solution_id },
-        },
-      };
-    }
-
-    // Generate troubleshooting steps with Gemini
     const geminiResponse = await this.geminiService.generateResponse(
-      `Provide clear troubleshooting steps for: ${message}`,
+      message,
+      context,
     );
 
     return {
@@ -217,7 +278,9 @@ export class ChatbotService {
   /**
    * Handle ticket status queries
    */
-  private async handleTicketStatus(message: string): Promise<{ response: string }> {
+  private async handleTicketStatus(
+    message: string,
+  ): Promise<{ response: string }> {
     // Extract ticket ID from message (e.g., IT-20261103-0001)
     const ticketIdMatch = message.match(/IT-\d{8}-\d{4}/);
     const ticketId = ticketIdMatch?.[0];
@@ -237,8 +300,10 @@ export class ChatbotService {
   /**
    * Handle escalation requests
    */
-  private async handleEscalation(message: string): Promise<{ response: string }> {
-    const response = `I understand you need immediate assistance. 🚨\n\n**Next Steps:**\n1. **Create a support ticket** - This will route your issue to our IT team\n2. **Call IT Support** - ext. 1234 (M-F, 8AM-5PM)\n3. **Email:** it-support@company.com\n\nWould you like me to help you create a support ticket? If yes, please describe your issue.`;
+  private async handleEscalation(
+    message: string,
+  ): Promise<{ response: string }> {
+    const response = `I understand you need assistance. Please create a support ticket through the IT Help Desk so the IT team can review your issue. If this is urgent, use your organization's established IT escalation channel.\n\nWould you like help preparing a support ticket?`;
 
     return { response };
   }
@@ -248,71 +313,177 @@ export class ChatbotService {
    */
   private async handleGeneral(
     message: string,
-    request: ChatbotRequest,
+    context: GeminiContext,
   ): Promise<{ response: string }> {
-    const geminiResponse = await this.geminiService.generateResponse(message, {
-      userRole: request.userRole,
-      userDepartment: request.userDepartment,
-      recentTickets: request.recentTickets,
-    });
+    const geminiResponse = await this.geminiService.generateResponse(
+      message,
+      context,
+    );
 
     return { response: geminiResponse.text };
   }
 
   /**
-   * Search knowledge base by keywords (internal - returns single best match)
+   * Retrieve and rank active FAQs and resolved-ticket solutions for grounding.
    */
-  private async findTopKnowledgeEntry(keywords: string[]): Promise<ChatbotKnowledge | null> {
+  private async retrieveRelevantKnowledge(
+    message: string,
+  ): Promise<RetrievedKnowledge> {
+    const emptyResult: RetrievedKnowledge = { faqs: [], solutions: [] };
+    const keywords = this.extractKeywords(message);
     if (keywords.length === 0) {
-      return null;
+      return emptyResult;
     }
 
-    // Search for matching entries with highest confidence
-    const query = this.knowledgeRepository
+    const faqSearch = this.buildKeywordCondition(
+      ['kb.question', 'kb.keywords', 'kb.answer', 'kb.category'],
+      keywords,
+      'faq',
+    );
+    const faqQuery = this.knowledgeRepository
       .createQueryBuilder('kb')
       .where('kb.is_active = true')
       .andWhere('kb.confidence_score >= :minConfidence', { minConfidence: 0.5 })
+      .andWhere(faqSearch.condition, faqSearch.parameters)
       .orderBy('kb.confidence_score', 'DESC')
-      .orderBy('kb.usage_count', 'DESC')
-      .limit(1);
+      .addOrderBy('kb.usage_count', 'DESC')
+      .take(50);
 
-    // Add keyword filters
-    let whereCondition = '(';
-    keywords.forEach((keyword, idx) => {
-      if (idx > 0) whereCondition += ' OR ';
-      whereCondition += `kb.keywords LIKE '%${keyword}%'`;
-    });
-    whereCondition += ')';
-
-    query.andWhere(whereCondition);
-
-    return await query.getOne();
-  }
-
-  /**
-   * Find similar solutions from resolved tickets
-   */
-  private async findSimilarSolutions(message: string): Promise<TicketSolution[]> {
-    const keywords = this.extractKeywords(message);
-
-    const query = this.solutionRepository
+    const solutionSearch = this.buildKeywordCondition(
+      [
+        'ts.solution_summary',
+        'ts.tags',
+        'ts.category',
+        'ts.issue_type',
+        'ts.resolution_notes',
+        'ts.resolution_steps',
+      ],
+      keywords,
+      'solution',
+    );
+    const solutionQuery = this.solutionRepository
       .createQueryBuilder('ts')
       .where('ts.is_active = true')
+      .andWhere(solutionSearch.condition, solutionSearch.parameters)
       .orderBy('ts.usage_count', 'DESC')
-      .limit(3);
+      .addOrderBy('ts.created_at', 'DESC')
+      .take(50);
 
-    // Filter by keywords in tags, category, or issue_type
-    if (keywords.length > 0) {
-      let whereCondition = '(';
-      keywords.forEach((keyword, idx) => {
-        if (idx > 0) whereCondition += ' OR ';
-        whereCondition += `ts.tags LIKE '%${keyword}%' OR ts.category LIKE '%${keyword}%'`;
-      });
-      whereCondition += ')';
-      query.andWhere(whereCondition);
-    }
+    const [faqCandidates, solutionCandidates] = await Promise.all([
+      faqQuery.getMany(),
+      solutionQuery.getMany(),
+    ]);
 
-    return await query.getMany();
+    const rankedFaqs = faqCandidates
+      .map((entry) => ({
+        entry,
+        score: this.scoreMatch(
+          keywords,
+          [entry.question, entry.keywords?.join(' '), entry.category],
+          [entry.answer],
+        ),
+      }))
+      .filter(({ score }) => score >= 0.3)
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          Number(b.entry.confidence_score) - Number(a.entry.confidence_score) ||
+          b.entry.usage_count - a.entry.usage_count,
+      )
+      .slice(0, 3)
+      .map(({ entry }) => ({
+        knowledge_id: entry.knowledge_id,
+        category: entry.category,
+        question: entry.question,
+        answer: entry.answer,
+        confidence_score: Number(entry.confidence_score),
+      }));
+
+    const rankedSolutions = solutionCandidates
+      .map((solution) => ({
+        solution,
+        score: this.scoreMatch(
+          keywords,
+          [
+            solution.solution_summary,
+            solution.tags?.join(' '),
+            solution.category,
+            solution.issue_type,
+          ],
+          [solution.resolution_notes, solution.resolution_steps?.join(' ')],
+        ),
+      }))
+      .filter(({ score }) => score >= 0.3)
+      .sort(
+        (a, b) =>
+          b.score - a.score || b.solution.usage_count - a.solution.usage_count,
+      )
+      .slice(0, 3)
+      .map(({ solution }) => ({
+        category: solution.category,
+        issue_type: solution.issue_type,
+        summary: solution.solution_summary,
+        steps: solution.resolution_steps || [],
+        notes: solution.resolution_notes || undefined,
+      }));
+
+    return { faqs: rankedFaqs, solutions: rankedSolutions };
+  }
+
+  private getRetrievalQuery(
+    message: string,
+    history: Array<{ role: string; content: string }>,
+  ): string {
+    if (!this.isFollowUpMessage(message)) return message;
+
+    const previousUserMessage = [...history]
+      .reverse()
+      .find((turn) => turn.role === 'user')?.content;
+    return previousUserMessage ? `${previousUserMessage} ${message}` : message;
+  }
+
+  private isFollowUpMessage(message: string): boolean {
+    return /\b(it|that|this|they|them|same|also|there|those|these|what about|and then)\b/i.test(
+      message,
+    );
+  }
+
+  private buildKeywordCondition(
+    fields: string[],
+    keywords: string[],
+    parameterPrefix: string,
+  ): { condition: string; parameters: Record<string, string> } {
+    const conditions: string[] = [];
+    const parameters: Record<string, string> = {};
+
+    keywords.forEach((keyword, index) => {
+      const parameter = `${parameterPrefix}_${index}`;
+      conditions.push(
+        `(${fields.map((field) => `LOWER(COALESCE(${field}, '')) LIKE :${parameter}`).join(' OR ')})`,
+      );
+      parameters[parameter] = `%${keyword}%`;
+    });
+
+    return { condition: `(${conditions.join(' OR ')})`, parameters };
+  }
+
+  private scoreMatch(
+    keywords: string[],
+    primaryFields: Array<string | undefined>,
+    secondaryFields: Array<string | undefined>,
+  ): number {
+    const primaryText = primaryFields.filter(Boolean).join(' ').toLowerCase();
+    const secondaryText = secondaryFields
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    const matchedWeight = keywords.reduce((total, keyword) => {
+      if (primaryText.includes(keyword)) return total + 1;
+      if (secondaryText.includes(keyword)) return total + 0.5;
+      return total;
+    }, 0);
+
+    return keywords.length === 0 ? 0 : matchedWeight / keywords.length;
   }
 
   /**
@@ -320,22 +491,60 @@ export class ChatbotService {
    */
   private extractKeywords(message: string): string[] {
     const stopwords = [
-      'the', 'a', 'an', 'and', 'or', 'but', 'is', 'are', 'was', 'were',
-      'my', 'your', 'i', 'you', 'he', 'she', 'it', 'we', 'they',
-      'can', 'could', 'would', 'should', 'do', 'does', 'did',
-      'how', 'what', 'where', 'when', 'why', 'which', 'who',
+      'the',
+      'a',
+      'an',
+      'and',
+      'or',
+      'but',
+      'is',
+      'are',
+      'was',
+      'were',
+      'my',
+      'your',
+      'i',
+      'you',
+      'he',
+      'she',
+      'it',
+      'we',
+      'they',
+      'can',
+      'could',
+      'would',
+      'should',
+      'do',
+      'does',
+      'did',
+      'how',
+      'what',
+      'where',
+      'when',
+      'why',
+      'which',
+      'who',
+      'help',
+      'please',
+      'tell',
+      'know',
+      'need',
+      'want',
+      'having',
     ];
 
     return message
       .toLowerCase()
-      .split(/\s+/)
+      .split(/[^a-z0-9]+/)
       .filter(
         (word) =>
-          word.length > 3 &&
-          !stopwords.includes(word) &&
-          !/[^a-z0-9]/.test(word),
+          word.length > 2 && !stopwords.includes(word) && !/^\d+$/.test(word),
       )
-      .slice(0, 5);
+      .slice(0, 10);
+  }
+
+  private getInsufficientContextResponse(): string {
+    return `I don't have enough verified information to answer that confidently, and I don't want to guess. Could you share the device, application, or exact error involved? For organization-specific policies or steps, please contact IT or submit a support ticket.`;
   }
 
   /**
@@ -396,16 +605,10 @@ export class ChatbotService {
     if (isHelpful) {
       entry.helpful_count += 1;
       // Increase confidence score
-      entry.confidence_score = Math.min(
-        1.0,
-        entry.confidence_score + 0.05,
-      );
+      entry.confidence_score = Math.min(1.0, entry.confidence_score + 0.05);
     } else {
       // Decrease confidence score
-      entry.confidence_score = Math.max(
-        0.0,
-        entry.confidence_score - 0.1,
-      );
+      entry.confidence_score = Math.max(0.0, entry.confidence_score - 0.1);
     }
 
     await this.knowledgeRepository.save(entry);
@@ -448,7 +651,7 @@ export class ChatbotService {
   }> {
     try {
       const totalInteractions = await this.interactionRepository.count();
-      
+
       const avgConfidenceResult = await this.interactionRepository
         .createQueryBuilder('ci')
         .select('AVG(ci.intent_confidence)', 'avg')
@@ -464,9 +667,13 @@ export class ChatbotService {
 
       // Parse average confidence safely
       let avgConfidence = 0;
-      if (avgConfidenceResult?.avg !== null && avgConfidenceResult?.avg !== undefined) {
+      if (
+        avgConfidenceResult?.avg !== null &&
+        avgConfidenceResult?.avg !== undefined
+      ) {
         const value = avgConfidenceResult.avg;
-        avgConfidence = typeof value === 'string' ? parseFloat(value) : Number(value);
+        avgConfidence =
+          typeof value === 'string' ? parseFloat(value) : Number(value);
         avgConfidence = isNaN(avgConfidence) ? 0 : avgConfidence;
       }
 
@@ -565,7 +772,10 @@ export class ChatbotService {
   /**
    * Get related solutions for troubleshooting
    */
-  async getRelatedSolutions(message: string, limit: number = 3): Promise<TicketSolution[]> {
+  async getRelatedSolutions(
+    message: string,
+    limit: number = 3,
+  ): Promise<TicketSolution[]> {
     const keywords = this.extractKeywords(message);
 
     const qb = this.solutionRepository
@@ -605,9 +815,7 @@ export class ChatbotService {
     asset_id?: string;
     require_approval?: boolean;
   }): Promise<{ ticket_id: string; message: string }> {
-    this.logger.log(
-      `[Chatbot] Creating ticket: ${ticketData.subject}`,
-    );
+    this.logger.log(`[Chatbot] Creating ticket: ${ticketData.subject}`);
 
     // In real implementation, this would call the TicketService
     // For now, return a message indicating ticket would be created
@@ -648,7 +856,9 @@ export class ChatbotService {
   /**
    * Get most helpful responses
    */
-  async getMostHelpfulResponses(limit: number = 10): Promise<ChatbotKnowledge[]> {
+  async getMostHelpfulResponses(
+    limit: number = 10,
+  ): Promise<ChatbotKnowledge[]> {
     return await this.knowledgeRepository
       .createQueryBuilder('kb')
       .where('kb.is_active = true')
@@ -672,7 +882,7 @@ export class ChatbotService {
       .limit(limit)
       .getMany();
 
-    return interactions.flatMap((i) => [
+    return interactions.reverse().flatMap((i) => [
       { role: 'user', content: i.user_message },
       { role: 'assistant', content: i.chatbot_response },
     ]);
