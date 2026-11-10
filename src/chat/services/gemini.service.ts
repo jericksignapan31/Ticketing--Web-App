@@ -42,6 +42,7 @@ export interface GeminiResponse {
 @Injectable()
 export class GeminiService {
   private readonly logger = new Logger('GeminiService');
+  private readonly modelName = 'gemini-3.8-flash';
   private genAI?: GoogleGenerativeAI;
   private model?: any;
   private isAvailable = false;
@@ -70,14 +71,14 @@ export class GeminiService {
 
       this.genAI = new GoogleGenerativeAI(apiKey);
       this.model = this.genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash', // Using faster flash model for real-time chat
+        model: this.modelName,
         systemInstruction: this.getSystemPrompt(),
       });
 
       this.isAvailable = true;
       this.logger.log('✅ Gemini API initialized successfully');
     } catch (error) {
-      this.logger.error('Failed to initialize Gemini API');
+      this.logGeminiFailure('initialization', error);
       this.isAvailable = false;
     }
   }
@@ -141,7 +142,7 @@ When escalating:
   ): Promise<GeminiResponse> {
     if (!this.isAvailable || !this.model) {
       this.logger.warn('Gemini API not available, using fallback response');
-      return this.getFallbackResponse(context);
+      return this.getFallbackResponse(userMessage, context);
     }
 
     try {
@@ -163,8 +164,8 @@ When escalating:
         },
       };
     } catch (error) {
-      this.logger.error('Error calling Gemini API');
-      return this.getFallbackResponse(context);
+      this.logGeminiFailure('response generation', error);
+      return this.getFallbackResponse(userMessage, context);
     }
   }
 
@@ -213,7 +214,7 @@ Respond ONLY in this JSON format (no markdown, no extra text):
         details: { reasoning: parsed.reasoning },
       };
     } catch (error) {
-      this.logger.error('Error detecting intent');
+      this.logGeminiFailure('intent detection', error);
       return this.detectIntentFallback(userMessage);
     }
   }
@@ -320,13 +321,27 @@ ${JSON.stringify(conversationHistory)}`;
   /**
    * Fallback response when Gemini is unavailable
    */
-  private getFallbackResponse(context?: GeminiContext): GeminiResponse {
+  private getFallbackResponse(
+    userMessage: string,
+    context?: GeminiContext,
+  ): GeminiResponse {
     const systemFacts =
       context?.systemKnowledge?.flatMap((item) => item.facts) || [];
     if (systemFacts.length > 0) {
       return {
         text: `${systemFacts.join(' ')} If you cannot sign in because you no longer know your current password, contact your IT administrator for assistance; this system does not currently provide a self-service password reset.`,
         confidence: 0.9,
+      };
+    }
+
+    if (this.isConversationStarter(userMessage)) {
+      const isTagalog =
+        /\b(pwede|puwede|maaari|tulong|kumusta|salamat)\b/i.test(userMessage);
+      return {
+        text: isTagalog
+          ? 'Oo naman! Ano ang maitutulong ko? Ikuwento mo lang kung anong IT issue o tanong ang mayroon ka.'
+          : 'Of course! What can I help you with? Tell me about the IT issue or question you have.',
+        confidence: 0.85,
       };
     }
 
@@ -368,6 +383,10 @@ ${JSON.stringify(conversationHistory)}`;
   } {
     const lower = userMessage.toLowerCase();
 
+    if (this.isConversationStarter(userMessage)) {
+      return { intent: 'GENERAL', confidence: 0.85 };
+    }
+
     if (
       lower.includes('?') ||
       lower.includes('how') ||
@@ -405,5 +424,27 @@ ${JSON.stringify(conversationHistory)}`;
     }
 
     return { intent: 'GENERAL', confidence: 0.3 };
+  }
+
+  private isConversationStarter(message: string): boolean {
+    return /^(hi|hello|hey|good morning|good afternoon|good evening|can you help me|could you help me|are you there|thanks|thank you|kumusta|pwede(?: mo ba akong)? tulungan|puwede(?: mo ba akong)? tulungan|maaari mo ba akong tulungan)\b[!.?,\s]*$/i.test(
+      message.trim(),
+    );
+  }
+
+  private logGeminiFailure(operation: string, error: unknown): void {
+    const rawName = error instanceof Error ? error.name : 'UnknownError';
+    const safeName = rawName.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    const status =
+      typeof error === 'object' &&
+      error !== null &&
+      'status' in error &&
+      typeof error.status === 'number'
+        ? `, HTTP ${error.status}`
+        : '';
+
+    this.logger.error(
+      `Gemini ${operation} failed (${safeName || 'UnknownError'}${status}); using fallback behavior`,
+    );
   }
 }
