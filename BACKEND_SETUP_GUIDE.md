@@ -122,19 +122,19 @@ async function seedKnowledgeBase() {
     {
       category: 'Access',
       question: 'How do I reset my password?',
-      answer: 'To reset your password:\n1. Click "Forgot Password" on the login page\n2. Enter your email address\n3. Check your email for a reset link\n4. Click the link and create a new password\n5. Log in with your new password\n\nIf you don\'t receive an email, check your spam folder or contact IT support.',
+      answer: 'The current IT Help Desk system does not provide a Forgot Password or email reset-link flow. If you are signed in, you can change your password through the authenticated POST /auth/change-password endpoint by providing your current password and a new password. If you cannot sign in because you do not know your current password, contact your IT administrator for assistance.',
       keywords: ['password', 'reset', 'forgot', 'login', 'access', 'account'],
     },
     {
       category: 'Access',
       question: 'How do I change my password?',
-      answer: 'To change your password:\n1. Log in to your account\n2. Go to Settings → Security\n3. Click "Change Password"\n4. Enter your current password\n5. Enter your new password (min 8 characters, includes uppercase, number, special character)\n6. Click "Save"\n7. Log out and log back in with your new password',
+      answer: 'The current system changes passwords through the authenticated POST /auth/change-password endpoint. Provide your current password and a new password. The new password must be at least 8 characters and contain an uppercase letter, a lowercase letter, a number, and a supported special character. The system rejects a new password that matches the current password.',
       keywords: ['password', 'change', 'security', 'update'],
     },
     {
       category: 'Access',
       question: 'I\'m locked out of my account. What do I do?',
-      answer: 'If your account is locked:\n1. Click "Forgot Password" on login page\n2. Complete the password reset process\n3. This will unlock your account\n4. Log in with your new password\n\nIf you still can\'t access your account, please create a support ticket and our IT team will help.',
+      answer: 'The current system does not provide a self-service Forgot Password or account-unlock flow. If you cannot sign in, contact your IT administrator or submit a support ticket for assistance.',
       keywords: ['locked', 'account', 'locked out', 'access denied'],
     },
 
@@ -268,7 +268,7 @@ curl -X POST http://localhost:3000/chat/chatbot/kb \
   -d '{
     "category": "Access",
     "question": "How do I reset my password?",
-    "answer": "To reset your password: 1. Click Forgot Password... 2. Check your email... 3. Create new password",
+    "answer": "The current system does not provide a self-service password reset. Signed-in users can change their password using their current password; users who cannot sign in should contact their IT administrator.",
     "keywords": ["password", "reset", "login"]
   }'
 ```
@@ -280,7 +280,7 @@ INSERT INTO chatbot_knowledge (category, question, answer, keywords, confidence_
 VALUES (
   'Access',
   'How do I reset my password?',
-  'To reset your password: 1. Click Forgot Password 2. Check email 3. Create new password',
+  'The current system does not provide a self-service password reset. Signed-in users can change their password using their current password; users who cannot sign in should contact their IT administrator.',
   ARRAY['password', 'reset', 'login'],
   0.95,
   true
@@ -339,7 +339,7 @@ curl -X POST http://localhost:3000/chat/chatbot/message \
 
 # Expected response:
 {
-  "response": "To reset your password...",
+  "response": "The current system does not provide a self-service password reset. Signed-in users can change their password using their current password; users who cannot sign in should contact their IT administrator.",
   "intent": "FAQ",
   "confidence": 0.95,
   "responseType": "FAQ",
@@ -686,4 +686,3 @@ Mark as complete when done:
 
 **Last Updated:** November 6, 2026  
 **Status:** Ready for Implementation ✅
-

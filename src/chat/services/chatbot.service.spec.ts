@@ -75,10 +75,10 @@ describe('ChatbotService grounded responses', () => {
   it('passes a matching active FAQ to Gemini as grounding context', async () => {
     const faq = {
       knowledge_id: 'faq-1',
-      category: 'Accounts',
-      question: 'How do I reset my VPN password?',
-      answer: 'Use the approved password reset portal.',
-      keywords: ['VPN', 'password', 'reset'],
+      category: 'Hardware',
+      question: 'How do I connect to company WiFi?',
+      answer: 'Select the company network and use your work credentials.',
+      keywords: ['wifi', 'network', 'connect'],
       confidence_score: 0.92,
       usage_count: 0,
       is_active: true,
@@ -88,12 +88,12 @@ describe('ChatbotService grounded responses', () => {
     const reply = await service.handleMessage({
       user_id: userId,
       conversation_id: conversationId,
-      message: 'How do I reset my VPN password?',
+      message: 'How do I connect to company WiFi?',
     });
 
     expect(reply.responseType).toBe(ChatbotResponseType.FAQ);
     expect(geminiService.generateResponse).toHaveBeenCalledWith(
-      'How do I reset my VPN password?',
+      'How do I connect to company WiFi?',
       expect.objectContaining({
         knowledgeBase: {
           faqs: [
@@ -105,6 +105,48 @@ describe('ChatbotService grounded responses', () => {
           solutions: [],
         },
         conversationHistory: [],
+      }),
+    );
+  });
+
+  it('uses verified authentication behavior instead of a stale forgot-password FAQ', async () => {
+    const staleFaq = {
+      knowledge_id: 'faq-reset',
+      category: 'Access',
+      question: 'How do I reset my password?',
+      answer:
+        'Click Forgot Password, enter your email, and follow the reset link.',
+      keywords: ['password', 'reset', 'forgot', 'login'],
+      confidence_score: 0.99,
+      usage_count: 10,
+      is_active: true,
+    };
+    const { service, geminiService } = createService({ faqs: [staleFaq] });
+    geminiService.generateResponse.mockResolvedValue({
+      text: 'Walang Forgot Password o email reset flow sa kasalukuyang system. Kailangan ng naka-login na user ang current password para magpalit ng password.',
+      confidence: 0.9,
+    });
+
+    const reply = await service.handleMessage({
+      user_id: userId,
+      conversation_id: conversationId,
+      message: 'I forgot my password. How can I reset it?',
+    });
+
+    expect(reply.response).toContain('Walang Forgot Password');
+    expect(geminiService.generateResponse).toHaveBeenCalledWith(
+      'I forgot my password. How can I reset it?',
+      expect.objectContaining({
+        systemKnowledge: [
+          expect.objectContaining({
+            topic: 'Account password and recovery behavior',
+            source: expect.stringContaining('src/auth/auth.controller.ts'),
+            facts: expect.arrayContaining([
+              expect.stringContaining('There is no forgot-password'),
+            ]),
+          }),
+        ],
+        knowledgeBase: { faqs: [], solutions: [] },
       }),
     );
   });
@@ -164,16 +206,16 @@ describe('ChatbotService grounded responses', () => {
   it('lets Gemini clarify instead of blocking the answer on low intent confidence', async () => {
     const faq = {
       knowledge_id: 'faq-1',
-      category: 'Accounts',
-      question: 'How do I reset my VPN password?',
-      answer: 'Use the approved password reset portal.',
-      keywords: ['VPN', 'password', 'reset'],
+      category: 'Hardware',
+      question: 'How do I connect to company WiFi?',
+      answer: 'Select the company network and use your work credentials.',
+      keywords: ['wifi', 'network', 'connect'],
       confidence_score: 0.92,
       usage_count: 0,
       is_active: true,
     };
     const clarification =
-      'I found a password reset FAQ, but I need to know whether this is for your VPN or account login.';
+      'I found a WiFi FAQ. Are you connecting from a laptop or a mobile device?';
     const { service, geminiService } = createService({
       faqs: [faq],
       intent: { intent: 'FAQ', confidence: 0.3 },
@@ -186,12 +228,12 @@ describe('ChatbotService grounded responses', () => {
     const reply = await service.handleMessage({
       user_id: userId,
       conversation_id: conversationId,
-      message: 'How do I reset my VPN password?',
+      message: 'How do I connect to company WiFi?',
     });
 
     expect(reply.response).toBe(clarification);
     expect(geminiService.generateResponse).toHaveBeenCalledWith(
-      'How do I reset my VPN password?',
+      'How do I connect to company WiFi?',
       expect.objectContaining({
         knowledgeBase: expect.objectContaining({
           faqs: [expect.objectContaining({ answer: faq.answer })],

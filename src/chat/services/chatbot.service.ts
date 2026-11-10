@@ -80,11 +80,18 @@ export class ChatbotService {
     );
     const knowledgeBase =
       await this.retrieveRelevantKnowledge(retrievalMessage);
+    const systemKnowledge = this.getProjectKnowledge(message);
+    if (systemKnowledge.length > 0) {
+      knowledgeBase.faqs = knowledgeBase.faqs.filter(
+        (faq) => !this.isConflictingPasswordFaq(faq),
+      );
+    }
     const context: GeminiContext = {
       userRole: request.userRole,
       userDepartment: request.userDepartment,
       recentTickets: request.recentTickets,
       conversationHistory,
+      systemKnowledge,
       knowledgeBase,
     };
 
@@ -103,12 +110,6 @@ export class ChatbotService {
     let suggestedAction: any = null;
 
     try {
-      const needsGroundedAnswer = [
-        'FAQ',
-        'TROUBLESHOOTING',
-        'GENERAL',
-      ].includes(intent);
-
       switch (intent) {
         case 'FAQ':
           const faqResult = await this.handleFAQ(message, context);
@@ -409,6 +410,40 @@ export class ChatbotService {
       }));
 
     return { faqs: rankedFaqs, solutions: rankedSolutions };
+  }
+
+  private getProjectKnowledge(
+    message: string,
+  ): NonNullable<GeminiContext['systemKnowledge']> {
+    if (!/\b(password|forgot|reset|login|locked|account)\b/i.test(message)) {
+      return [];
+    }
+
+    return [
+      {
+        topic: 'Account password and recovery behavior',
+        source:
+          'src/auth/auth.controller.ts, src/auth/auth.service.ts, src/auth/dto/change-password.dto.ts, src/common/utils/password-validator.ts',
+        facts: [
+          'The authentication API implements POST /auth/login and POST /auth/change-password. There is no forgot-password or password-reset endpoint in AuthController.',
+          'POST /auth/change-password requires authentication and both currentPassword and newPassword. The service verifies the current password, rejects reusing it, and saves the new password.',
+          'The new password must be at least 8 characters and contain an uppercase letter, a lowercase letter, a number, and one supported special character.',
+        ],
+      },
+    ];
+  }
+
+  private isConflictingPasswordFaq(
+    faq: RetrievedKnowledge['faqs'][number],
+  ): boolean {
+    const content = `${faq.question} ${faq.answer}`.toLowerCase();
+    return (
+      /\b(forgot password|reset link|password reset|reset your password)\b/.test(
+        content,
+      ) ||
+      /settings.{0,20}security/.test(content) ||
+      /email.{0,30}(reset|password)/.test(content)
+    );
   }
 
   private getRetrievalQuery(
