@@ -51,7 +51,6 @@ export interface ChatbotReply {
 @Injectable()
 export class ChatbotService {
   private readonly logger = new Logger('ChatbotService');
-  private readonly CONFIDENCE_THRESHOLD = 0.7;
 
   constructor(
     @InjectRepository(ChatbotKnowledge)
@@ -109,70 +108,52 @@ export class ChatbotService {
         'TROUBLESHOOTING',
         'GENERAL',
       ].includes(intent);
-      const hasKnowledge =
-        knowledgeBase.faqs.length > 0 ||
-        knowledgeBase.solutions.length > 0 ||
-        (this.isFollowUpMessage(message) && conversationHistory.length > 0);
 
-      if (
-        needsGroundedAnswer &&
-        (!hasKnowledge ||
-          (confidence < this.CONFIDENCE_THRESHOLD &&
-            this.geminiService.isGeminiAvailable()))
-      ) {
-        response = this.getInsufficientContextResponse();
-        responseType =
-          intent === 'TROUBLESHOOTING'
-            ? ChatbotResponseType.TROUBLESHOOTING
-            : intent === 'FAQ'
-              ? ChatbotResponseType.FAQ
-              : ChatbotResponseType.GENERAL;
-      } else
-        switch (intent) {
-          case 'FAQ':
-            const faqResult = await this.handleFAQ(message, context);
-            response = faqResult.answer;
-            responseType = ChatbotResponseType.FAQ;
-            break;
+      switch (intent) {
+        case 'FAQ':
+          const faqResult = await this.handleFAQ(message, context);
+          response = faqResult.answer;
+          responseType = ChatbotResponseType.FAQ;
+          break;
 
-          case 'TICKET_CREATION':
-            const ticketResult = await this.handleTicketCreation(
-              message,
-              context,
-            );
-            response = ticketResult.response;
-            responseType = ChatbotResponseType.TICKET_CREATION;
-            suggestedAction = ticketResult.suggestedAction;
-            break;
+        case 'TICKET_CREATION':
+          const ticketResult = await this.handleTicketCreation(
+            message,
+            context,
+          );
+          response = ticketResult.response;
+          responseType = ChatbotResponseType.TICKET_CREATION;
+          suggestedAction = ticketResult.suggestedAction;
+          break;
 
-          case 'TROUBLESHOOTING':
-            const troubleResult = await this.handleTroubleshooting(
-              message,
-              context,
-            );
-            response = troubleResult.response;
-            responseType = ChatbotResponseType.TROUBLESHOOTING;
-            suggestedAction = troubleResult.suggestedAction;
-            break;
+        case 'TROUBLESHOOTING':
+          const troubleResult = await this.handleTroubleshooting(
+            message,
+            context,
+          );
+          response = troubleResult.response;
+          responseType = ChatbotResponseType.TROUBLESHOOTING;
+          suggestedAction = troubleResult.suggestedAction;
+          break;
 
-          case 'TICKET_STATUS':
-            const statusResult = await this.handleTicketStatus(message);
-            response = statusResult.response;
-            responseType = ChatbotResponseType.TICKET_STATUS;
-            break;
+        case 'TICKET_STATUS':
+          const statusResult = await this.handleTicketStatus(message);
+          response = statusResult.response;
+          responseType = ChatbotResponseType.TICKET_STATUS;
+          break;
 
-          case 'ESCALATION':
-            const escalationResult = await this.handleEscalation(message);
-            response = escalationResult.response;
-            responseType = ChatbotResponseType.ESCALATION;
-            break;
+        case 'ESCALATION':
+          const escalationResult = await this.handleEscalation(message);
+          response = escalationResult.response;
+          responseType = ChatbotResponseType.ESCALATION;
+          break;
 
-          default:
-            const generalResult = await this.handleGeneral(message, context);
-            response = generalResult.response;
-            responseType = ChatbotResponseType.GENERAL;
-            break;
-        }
+        default:
+          const generalResult = await this.handleGeneral(message, context);
+          response = generalResult.response;
+          responseType = ChatbotResponseType.GENERAL;
+          break;
+      }
     } catch (error) {
       this.logger.error('Error processing message:', error);
       response = this.getFallbackResponse();
@@ -541,10 +522,6 @@ export class ChatbotService {
           word.length > 2 && !stopwords.includes(word) && !/^\d+$/.test(word),
       )
       .slice(0, 10);
-  }
-
-  private getInsufficientContextResponse(): string {
-    return `I don't have enough verified information to answer that confidently, and I don't want to guess. Could you share the device, application, or exact error involved? For organization-specific policies or steps, please contact IT or submit a support ticket.`;
   }
 
   /**

@@ -109,8 +109,12 @@ describe('ChatbotService grounded responses', () => {
     );
   });
 
-  it('does not fabricate details when the question has no supporting context', async () => {
+  it('routes unsupported policy questions to Gemini for a specific clarification', async () => {
     const { service, geminiService } = createService();
+    geminiService.generateResponse.mockResolvedValue({
+      text: 'I do not have the company reimbursement policy. Which expense are you asking about?',
+      confidence: 0.9,
+    });
 
     const reply = await service.handleMessage({
       user_id: userId,
@@ -118,12 +122,14 @@ describe('ChatbotService grounded responses', () => {
       message: 'What is the reimbursement policy for home internet?',
     });
 
-    expect(reply.response).toContain(
-      "I don't have enough verified information",
-    );
-    expect(reply.response).toContain('contact IT');
+    expect(reply.response).toContain('Which expense are you asking about?');
     expect(reply.response).not.toContain('reimbursement is');
-    expect(geminiService.generateResponse).not.toHaveBeenCalled();
+    expect(geminiService.generateResponse).toHaveBeenCalledWith(
+      'What is the reimbursement policy for home internet?',
+      expect.objectContaining({
+        knowledgeBase: { faqs: [], solutions: [] },
+      }),
+    );
   });
 
   it('includes recent conversation history when answering a follow-up', async () => {
@@ -155,7 +161,7 @@ describe('ChatbotService grounded responses', () => {
     );
   });
 
-  it('asks for clarification when intent confidence is low despite a matching FAQ', async () => {
+  it('lets Gemini clarify instead of blocking the answer on low intent confidence', async () => {
     const faq = {
       knowledge_id: 'faq-1',
       category: 'Accounts',
@@ -166,9 +172,15 @@ describe('ChatbotService grounded responses', () => {
       usage_count: 0,
       is_active: true,
     };
+    const clarification =
+      'I found a password reset FAQ, but I need to know whether this is for your VPN or account login.';
     const { service, geminiService } = createService({
       faqs: [faq],
       intent: { intent: 'FAQ', confidence: 0.3 },
+    });
+    geminiService.generateResponse.mockResolvedValue({
+      text: clarification,
+      confidence: 0.9,
     });
 
     const reply = await service.handleMessage({
@@ -177,9 +189,14 @@ describe('ChatbotService grounded responses', () => {
       message: 'How do I reset my VPN password?',
     });
 
-    expect(reply.response).toContain(
-      "I don't have enough verified information",
+    expect(reply.response).toBe(clarification);
+    expect(geminiService.generateResponse).toHaveBeenCalledWith(
+      'How do I reset my VPN password?',
+      expect.objectContaining({
+        knowledgeBase: expect.objectContaining({
+          faqs: [expect.objectContaining({ answer: faq.answer })],
+        }),
+      }),
     );
-    expect(geminiService.generateResponse).not.toHaveBeenCalled();
   });
 });
